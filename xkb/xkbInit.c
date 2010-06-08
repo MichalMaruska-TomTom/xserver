@@ -477,6 +477,13 @@ XkbInitControls(DeviceIntPtr pXDev, XkbSrvInfoPtr xkbi)
     return Success;
 }
 
+/* In this file I see 2 entry points.
+ *
+ * InitKeyboardDeviceStruct is called from the low-level driver as this is a
+ * wrapper for dix's InitKeyboardDeviceStruct.  But Before calling this the driver
+ * should setup the XKB config!  That is done through: names XkbInitDevice is the
+ * return from DIX in here.*/
+
 _X_EXPORT Bool
 InitKeyboardDeviceStruct(DeviceIntPtr dev, XkbRMLVOSet * rmlvo,
                          BellProcPtr bell_func, KbdCtrlProcPtr ctrl_func)
@@ -676,10 +683,13 @@ XkbFreeInfo(XkbSrvInfoPtr xkbi)
 extern int XkbDfltRepeatDelay;
 extern int XkbDfltRepeatInterval;
 
+/* mmc: This is broken: I should #if !  all parts mentioning these vars! todo! */
+#if !MMC_PIPELINE || 1
 extern unsigned short XkbDfltAccessXTimeout;
 extern unsigned int XkbDfltAccessXTimeoutMask;
 extern unsigned int XkbDfltAccessXFeedback;
 extern unsigned char XkbDfltAccessXOptions;
+#endif
 
 int
 XkbProcessArguments(int argc, char *argv[], int i)
