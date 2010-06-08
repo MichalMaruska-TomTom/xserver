@@ -633,7 +633,7 @@ XkbChangeKeycodeRange(XkbDescPtr xkb,
                                                         XkbVirtualModMapMask,
                                                         minKC,
                                                         &changes->map.
-                                                        first_modmap_key,
+                                                        first_vmodmap_key,
                                                         &changes->map.
                                                         num_vmodmap_keys);
                 }
@@ -666,7 +666,7 @@ XkbChangeKeycodeRange(XkbDescPtr xkb,
                     free(prev_key_sym_map);
                     return BadAlloc;
                 }
-                memset((char *) &xkb->map->key_sym_map[xkb->max_key_code], 0,
+                memset((char *) &xkb->map->key_sym_map[xkb->max_key_code + 1], 0,
                        tmp * sizeof(XkbSymMapRec));
                 if (changes) {
                     changes->map.changed = _ExtendRange(changes->map.changed,
@@ -687,7 +687,7 @@ XkbChangeKeycodeRange(XkbDescPtr xkb,
                     free(prev_modmap);
                     return BadAlloc;
                 }
-                memset((char *) &xkb->map->modmap[xkb->max_key_code], 0, tmp);
+                memset((char *) &xkb->map->modmap[xkb->max_key_code + 1], 0, tmp);
                 if (changes) {
                     changes->map.changed = _ExtendRange(changes->map.changed,
                                                         XkbModifierMapMask,
@@ -710,7 +710,7 @@ XkbChangeKeycodeRange(XkbDescPtr xkb,
                     free(prev_behaviors);
                     return BadAlloc;
                 }
-                memset((char *) &xkb->server->behaviors[xkb->max_key_code], 0,
+                memset((char *) &xkb->server->behaviors[xkb->max_key_code + 1], 0,
                        tmp * sizeof(XkbBehavior));
                 if (changes) {
                     changes->map.changed = _ExtendRange(changes->map.changed,
@@ -732,7 +732,7 @@ XkbChangeKeycodeRange(XkbDescPtr xkb,
                     free(prev_key_acts);
                     return BadAlloc;
                 }
-                memset((char *) &xkb->server->key_acts[xkb->max_key_code], 0,
+                memset((char *) &xkb->server->key_acts[xkb->max_key_code + 1], 0,
                        tmp * sizeof(unsigned short));
                 if (changes) {
                     changes->map.changed = _ExtendRange(changes->map.changed,
@@ -754,18 +754,39 @@ XkbChangeKeycodeRange(XkbDescPtr xkb,
                     free(prev_vmodmap);
                     return BadAlloc;
                 }
-                memset((char *) &xkb->server->vmodmap[xkb->max_key_code], 0,
+                memset((char *) &xkb->server->vmodmap[xkb->max_key_code + 1], 0,
                        tmp * sizeof(unsigned short));
                 if (changes) {
                     changes->map.changed = _ExtendRange(changes->map.changed,
                                                         XkbVirtualModMapMask,
                                                         maxKC,
                                                         &changes->map.
-                                                        first_modmap_key,
+                                                        first_vmodmap_key,
                                                         &changes->map.
                                                         num_vmodmap_keys);
                 }
             }
+            /* resize server->explicit too. */
+            if (xkb->server->explicit) {
+                unsigned char *prev_explicit = xkb->server->explicit;
+                xkb->server->explicit= xrealloc(xkb->server->explicit,
+                                                (maxKC+1)*sizeof(unsigned char));
+                if (!xkb->server->explicit) {
+                    xfree(prev_explicit);
+                    return BadAlloc;
+                }
+                bzero((char *)&xkb->server->explicit[xkb->max_key_code + 1],
+                      tmp*sizeof(unsigned char));
+                if (changes) {
+                    changes->map.changed=
+                        _ExtendRange(changes->map.changed,
+                                     XkbExplicitComponentsMask,maxKC,
+                                     /* ???? */
+                                     &changes->map.first_key_explicit,
+                                     &changes->map.num_key_explicit);
+                }
+            }
+
         }
         if ((xkb->names) && (xkb->names->keys)) {
             XkbKeyNameRec *prev_keys = xkb->names->keys;
@@ -776,7 +797,7 @@ XkbChangeKeycodeRange(XkbDescPtr xkb,
                 free(prev_keys);
                 return BadAlloc;
             }
-            memset((char *) &xkb->names->keys[xkb->max_key_code], 0,
+            memset((char *) &xkb->names->keys[xkb->max_key_code + 1], 0,
                    tmp * sizeof(XkbKeyNameRec));
             if (changes) {
                 changes->names.changed = _ExtendRange(changes->names.changed,
