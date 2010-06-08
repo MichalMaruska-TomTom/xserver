@@ -656,6 +656,7 @@ mieqProcessInputEvents(void)
 
         master = (dev) ? GetMaster(dev, MASTER_ATTACHED) : NULL;
 
+        /* Why inside the loop?  Could the processing of 1 event take so much time? */
         if (screenIsSaved == SCREEN_SAVER_ON)
             dixSaveScreens(serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
 #ifdef DPMSExtension
