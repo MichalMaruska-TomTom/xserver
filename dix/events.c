@@ -1341,6 +1341,7 @@ ComputeFreezes(void)
       }
 
     syncEvents.playingEvents = TRUE;
+    /* mmc: this is only for replaying the 1 event which caused Grab */
     if (replayDev) {
         DeviceEvent *event = replayDev->deviceGrab.sync.event;
 
@@ -1364,6 +1365,8 @@ ComputeFreezes(void)
                                     NullWindow, replayDev);
         }
     }
+    /* mmc: find the first/_any_ device not frozen ...
+     * fixme: This should run only on devs which were frozen up to now!   */
     for (dev = devices; dev; dev = dev->next) {
             if (!dev->deviceGrab.sync.frozen) {
 #if MMC_PIPELINE
