@@ -1287,9 +1287,14 @@ ComputeFreezes(void)
 #endif
 	)
       {
+#if debug_mmc || 1
+	  ErrorF("%s%s%s: detected recursive call-> return.\n", event_color,
+		 __FUNCTION__, color_reset);
+#endif
 	  return;
       }
 
+    ErrorF("%s%s%s: now scanning and releasing events!\n", event_color, __FUNCTION__, color_reset);
     syncEvents.playingEvents = TRUE;
     /* mmc: this is only for replaying the 1 event which caused Grab */
     if (replayDev) {
@@ -1318,7 +1323,8 @@ ComputeFreezes(void)
     /* mmc: find the first/_any_ device not frozen ...
      * fixme: This should run only on devs which were frozen up to now!   */
     for (dev = devices; dev; dev = dev->next) {
-            if (!dev->deviceGrab.sync.frozen) {
+        ErrorF("\t%s\n", dev->name);
+        if (!dev->deviceGrab.sync.frozen) {
 #if MMC_PIPELINE
 	    if (dev->public.thawProc) {
 		dev->public.thawProc(dev);
@@ -1333,8 +1339,8 @@ ComputeFreezes(void)
 		 * But PlayReleasedEvents runs all events in the Syncevents queue,
 		 * so once is enough. So, i use this flipper `played' */
 		if (! played) {
-                     /* once more: this is not synchronized with the events in the
-                      * Pipeline - bug! */
+                    /* once more: this is not synchronized with the events in the
+                     * Pipeline - bug! */
 		    PlayReleasedEvents();
 		    played = TRUE;
 		}
