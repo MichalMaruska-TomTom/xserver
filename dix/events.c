@@ -1257,7 +1257,12 @@ ComputeFreezes(void)
     DeviceIntPtr dev;
     Bool played = FALSE;
 
-    for (dev = inputInfo.devices; dev; dev = dev->next)
+    DeviceIntPtr devices;
+    /* mmc: [24 gen 06] a quick attempt to fix:   mmc: What? is that
+       after VT switch? */
+    devices = inputInfo.devices?inputInfo.devices:inputInfo.off_devices;
+
+    for (dev = devices; dev; dev = dev->next)
         FreezeThaw(dev, dev->deviceGrab.sync.other ||
                    (dev->deviceGrab.sync.state >= FROZEN));
 
@@ -1309,7 +1314,7 @@ ComputeFreezes(void)
                                     NullWindow, replayDev);
         }
     }
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = devices; dev; dev = dev->next) {
             if (!dev->deviceGrab.sync.frozen) {
 #if MMC_PIPELINE
 	    if (dev->public.thawProc) {
@@ -1334,7 +1339,10 @@ ComputeFreezes(void)
         }
     }
     syncEvents.playingEvents = FALSE;
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    /* mmc: [24 gen 06] a quick attempt to fix: */
+    devices = inputInfo.devices?inputInfo.devices:inputInfo.off_devices;
+
+    for (dev = devices; dev; dev = dev->next) {
         if (DevHasCursor(dev)) {
             /* the following may have been skipped during replay,
                so do it now */
@@ -1631,6 +1639,7 @@ DeactivateKeyboardGrab(DeviceIntPtr keybd)
 {
     GrabPtr grab = keybd->deviceGrab.grab;
     DeviceIntPtr dev;
+    DeviceIntPtr devices;
     WindowPtr focusWin = keybd->focus ? keybd->focus->win
         : keybd->spriteInfo->sprite->win;
     Bool wasImplicit = (keybd->deviceGrab.fromPassiveGrab &&
@@ -1818,12 +1827,15 @@ ProcAllowEvents(ClientPtr client)
 void
 ReleaseActiveGrabs(ClientPtr client)
 {
-    DeviceIntPtr dev;
+    DeviceIntPtr dev, devices;
     Bool done;
 
     /* XXX CloseDownClient should remove passive grabs before
      * releasing active grabs.
      */
+    /* mmc: [24 gen 06] a quick attempt to fix: */
+    devices = inputInfo.devices?inputInfo.devices:inputInfo.off_devices;
+    ErrorF("%s\n", __FUNCTION__);
     do {
         done = TRUE;
         for (dev = inputInfo.devices; dev; dev = dev->next) {
