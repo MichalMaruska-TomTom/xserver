@@ -1048,12 +1048,37 @@ MonthChangedOrBadTime(InternalEvent *ev)
      * different sources in sorted order, then it's possible for time to go
      * backwards when it should not.  Here we ensure a decent time.
      */
+    /* mmc: I want to solve it by reordering the events. But I think,
+     * that time going backwards in the events is OK if they come from a
+     * previously frozen device.
+     * Is replaying from different pipelines synced? */
+
     if ((currentTime.milliseconds - ev->any.time) > TIMESLOP)
         currentTime.months++;
-    else
-        ev->any.time = currentTime.milliseconds;
+    else {
+#if debug_mmc
+	ErrorF("%s%s%s\n\tevent time: %u\n\tcurrenttime (variable): %u (month %u)"
+	       "..... difference: %ld\n",
+	       color_green, __FUNCTION__, color_reset,
+	       ev->any.time,
+	       currentTime.milliseconds,
+	       currentTime.months,
+	       /* careful about difference of unsigned longs: */
+	       (currentTime.milliseconds > ev->any.time)?
+	       (long) (currentTime.milliseconds - ev->any.time):
+	       (- (long) (ev->any.time - currentTime.milliseconds)));
+#endif
+
+#if !MMC_PIPELINE
+	/* [03 giu 05] ... so this can be re-enabled */
+	ev->any.time = currentTime.milliseconds;
+#endif
+    };
 }
 
+
+/* This tries to push ahead currentTime.
+   But sometimes it could overwrite the event time! */
 static void
 NoticeTime(InternalEvent *ev)
 {
