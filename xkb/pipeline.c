@@ -64,6 +64,8 @@ xkb_init_pipeline(DeviceIntPtr device)
     PluginInstance* plugin;
 
     assert(!device->pipeline);
+    ErrorF("%s: configuring the pipe-line for ... %s\n", __FUNCTION__, device->name);
+
     /* let's build this pipeline:
      *
      *       queue -> AR -> core
@@ -98,6 +100,7 @@ xkb_init_pipeline(DeviceIntPtr device)
      * timers, and blockHandlers to set such timeout. So i register one! */
     RegisterTimeBlockAndWakeupHandlers((TimeBlockHandlerProcPtr) set_timeout,
 				       (TimeWakeupHandlerProcPtr) NoopDDA, device);
+    ErrorF("...block handler set_timeout registered, %s exits (ok)\n", __FUNCTION__);
 
     // device->last_upper_bound = device->time = GetTimeInMillis();
 }
@@ -152,16 +155,37 @@ set_timeout(DeviceIntPtr keybd, struct timeval** wtp, pointer mask, Time now)
 	timeout = (keybd->pipeline->wakeup_time <= now)? 0 :
             keybd->pipeline->wakeup_time - now;
 
+#if DEBUG_timeout
+        ErrorF ("%s: current time is %lu, pipeline needs a wakeup at %lu\n", __FUNCTION__,
+                now, keybd->pipeline->wakeup_time);
+        ErrorF ("%s: so, our timeout %lu,  previously was %ld : %ld\n", __FUNCTION__,
+                timeout, wt->tv_sec, wt->tv_usec);
+#endif
+
 	/* copied from os/WaitFor.c */
 	waittime.tv_sec = timeout / MILLI_PER_SECOND;
 	waittime.tv_usec = (timeout % MILLI_PER_SECOND) *
 	    (1000000 / MILLI_PER_SECOND);
 
+#if DEBUG_timeout
+        /* ErrorF ("mmc: timeout decomposition: %lu -> %ld : %ld\n", timeout,
+           waittime.tv_sec, waittime.tv_usec); */
+        ErrorF ("%s: our %ld, global %ld (seconds) : diff: %ld\n", __FUNCTION__,
+                waittime.tv_sec,
+                wt->tv_sec,
+                waittime.tv_sec -  wt->tv_sec);
+#endif
 	if (wt->tv_sec > waittime.tv_sec) {
+#if DEBUG_timeout
+            ErrorF ("%s: hence correcting the timeout!\n", __FUNCTION__);
+#endif
 	    wt->tv_sec = waittime.tv_sec;
 	    wt->tv_usec = waittime.tv_usec;
 	} else if ((wt->tv_sec == waittime.tv_sec)
                    && (wt->tv_usec > waittime.tv_usec)) {
+#if DEBUG_timeout
+            ErrorF ("%s: correcting!\n", __FUNCTION__);
+#endif
 	    wt->tv_usec = waittime.tv_usec;
 	}
     }
@@ -185,6 +209,9 @@ insert_plugin_around (DeviceIntPtr keybd, PluginInstance* plugin,
 {
     PluginInstance* prev;
     // bug!    assert (plugin->dev == keybd);
+
+    ErrorF ("%s: %s %s %s\n", __FUNCTION__, PLUGIN_NAME(plugin), before?"before":"after",
+            name_of_precedent);
     /* find it... */
     assert (keybd->pipeline);
 
@@ -194,7 +221,9 @@ insert_plugin_around (DeviceIntPtr keybd, PluginInstance* plugin,
 	prev = prev->next;
 
     if (prev) {
-	switch (before) {
+        ErrorF ("%s: inserting %s %s a new plugin %s\n", __FUNCTION__,
+                before?"before":"after", PLUGIN_NAME(prev), PLUGIN_NAME(plugin));
+        switch (before) {
 	    case INSERT_BEFORE:
 	    {
 		PluginInstance* prev_prev;
@@ -209,6 +238,7 @@ insert_plugin_around (DeviceIntPtr keybd, PluginInstance* plugin,
 		    prev_prev->next = plugin;
 		    plugin->prev = prev_prev;
 		} else {
+                    ErrorF ("%s: %s is now the first plugin\n", __FUNCTION__, PLUGIN_NAME(plugin));
 		    keybd->pipeline = plugin;
 		    plugin->prev = NULL;
 		}
@@ -235,12 +265,50 @@ insert_plugin_around (DeviceIntPtr keybd, PluginInstance* plugin,
     return (prev != NULL);
 }
 
+const char* event_names[] = {
+    "KeyPress",
+    "KeyRelease",
+    "ButtonPress",
+    "ButtonRelease",
+    "Motion",
+    "Enter",
+    "Leave",
+    "FocusIn",
+    "FocusOut",
+    "ProximityIn",
+    "ProximityOut",
+    "DeviceChanged",
+    "Hierarchy",
+    "DGAEvent",
+    "RawKeyPress",
+    "RawKeyRelease",
+    "RawButtonPress",
+    "RawButtonRelease",
+    "RawMotion",
+    "XQuartz"
+};
+
+
 /* this is the interface to the beginning of old key-event processing:
  * just when we take an event from xf86EventQueue */
 static void
 start_plugin_pipeline(InternalEvent *event, DeviceIntPtr keybd)
 {
     PluginInstance* plugin = keybd->pipeline;
+    ErrorF("%s: %s %s\n", __FUNCTION__, keybd->name, event_names[event->any.type - 2 ]);
+#if 0
+    if (keybd->last_upper_bound > event->u.keyButtonPointer.time)
+	ErrorF("%s: processing event coming from time %d before last push %d!\n", __FUNCTION__,
+	       (int) event->u.keyButtonPointer.time,
+	       (int) keybd->last_upper_bound);
+
+#if DEBUG_PIPELINE
+    if (plugin)
+	ErrorF("%s: beginning through %s%s. %s\n", __FUNCTION__,
+	       PLUGIN_NAME(plugin), (plugin_frozen(plugin))?" frozen!":"",
+	       (event->u.u.type==KeyRelease)?"release":"press");
+#endif
+#endif
 
     if (plugin && PluginClass(plugin)->ProcessEvent && !plugin_frozen(plugin))
 	/* the event is still owned by us. */
@@ -251,6 +319,9 @@ start_plugin_pipeline(InternalEvent *event, DeviceIntPtr keybd)
 	ErrorF("%s: no keyboard pipeline processor available for events. Dropping them!\n",
 	       __FUNCTION__);
       }
+#if  DEBUG_PIPELINE
+    ErrorF("---------------- end of pipeline activity (from a key event)\n");
+#endif
 }
 
 
@@ -259,6 +330,9 @@ static void
 thaw_pipeline_end(DeviceIntPtr keybd) /* CARD32 time */
 {
   PluginInstance* plugin = keybd->pipeline;
+#if  DEBUG_PIPELINE
+   ErrorF("/------ A client-caused thaw: \n%s:\n", __FUNCTION__);
+#endif
    assert (keybd->pipeline);
 
    /* go the the end of chain, and thaw it? */
@@ -267,6 +341,9 @@ thaw_pipeline_end(DeviceIntPtr keybd) /* CARD32 time */
 
    assert (PluginClass(plugin)->NotifyThaw);
    PluginClass(plugin)->NotifyThaw(plugin, 0); /* fixme: time! */
+#if  DEBUG_PIPELINE
+   ErrorF("_//////  ends %s:\n", __FUNCTION__);
+#endif
 }
 
 
