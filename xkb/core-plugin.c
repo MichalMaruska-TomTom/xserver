@@ -32,10 +32,18 @@ core_process_key_event(PluginInstance* plugin,
     DeviceIntPtr keybd = plugin->device;
     // CHECKEVENT(event);
 
+    ErrorF("%s: %s %d\n", __FUNCTION__, keybd->name,
+	   event->device_event.detail.key);
+
     ProcessKeyboardEvent(event, keybd);
     if (owner)
 	free(event);
 
+#if DEBUG_PIPELINE
+    if (keybd->sync.frozen)
+	ErrorF("\n%s: detected freeze! Now chain reaction?\n", __FUNCTION__);
+#endif
+    // bug!
     plugin->frozen = (keybd->deviceGrab.sync.frozen)?TRUE:FALSE;
 }
 
@@ -51,6 +59,9 @@ core_thaw(PluginInstance* plugin, Time time)
     assert(plugin->prev);
     assert(PluginClass(plugin->prev)->NotifyThaw);
 
+#if DEBUG_PIPELINE
+    ErrorF("%s:\n", __FUNCTION__);
+#endif
     plugin->frozen = FALSE;
     PluginClass(plugin->prev)->NotifyThaw(plugin->prev, time);
 }

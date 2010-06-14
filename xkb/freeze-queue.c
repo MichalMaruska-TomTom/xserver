@@ -81,6 +81,10 @@ queue_process_key_event(PluginInstance* plugin, InternalEvent *event, Bool owner
     {
 	queue_append(plugin->data, event, owner);
         plugin->wakeup_time = 0;
+#if DEBUG_PIPELINE
+	ErrorF("%s: now %d events in queue\n", __FUNCTION__,
+	       queue_count_events((queue_data*)plugin->data));
+#endif
     } else {
 	PluginClass(plugin->next)->ProcessEvent(plugin->next, event, owner);
 	/* this plugin is not interested in time */
@@ -102,12 +106,26 @@ queue_accept_time(PluginInstance* plugin, Time time)
             plugin->wakeup_time = next->wakeup_time;
 	} else if (next->wakeup_time) {
             /* uselessly woken? */
+#if DEBUG_PIPELINE
+	    /* this is unexpected! */
+            ErrorF("%s: too early for the next plugin. now " TIME_FORMAT
+		   ", needed too early " TIME_FORMAT " (" TIME_FORMAT ")\n",
+		   __FUNCTION__, time,
+		   (next->wakeup_time - time), next->wakeup_time);
+#endif
 	}
 	if (plugin_frozen(next)) {
+#if DEBUG_PIPELINE
+	    ErrorF("%s: ->pushing _our_ current time\n", __FUNCTION__);
+#endif
 	    ((queue_data*)plugin->data)->time = time;
 	}
-    } else
+    } else {
         plugin->wakeup_time = 0;
+#if DEBUG_PIPELINE
+	ErrorF("%s: ->next is frozen\n", __FUNCTION__);
+#endif
+    }
 }
 
 
@@ -116,6 +134,10 @@ queue_thaw(PluginInstance* plugin, Time time)
 {
     PluginInstance* next = plugin->next;
     queue_data* data = (queue_data*) plugin->data;
+
+#if DEBUG_PIPELINE
+    ErrorF("%s: %d events in the queue!\n", __FUNCTION__, queue_count_events(data));
+#endif
 
     /* push from the queue. */
     while (! plugin_frozen(next) && !(xorg_list_is_empty(&data->pending))) {
