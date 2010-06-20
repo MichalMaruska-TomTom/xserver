@@ -65,6 +65,7 @@ typedef enum {
 #define ABI_CLASS_XINPUT	"X.Org XInput driver"
 #define ABI_CLASS_EXTENSION	"X.Org Server Extension"
 #define ABI_CLASS_FONT		"X.Org Font Renderer"
+#define ABI_CLASS_INPUT		"X.Org Input Processor"
 
 #define ABI_MINOR_MASK		0x0000FFFF
 #define ABI_MAJOR_MASK		0xFFFF0000
@@ -86,6 +87,7 @@ typedef enum {
 #define ABI_XINPUT_VERSION	SET_ABI_VERSION(16, 0)
 #define ABI_EXTENSION_VERSION	SET_ABI_VERSION(6, 0)
 #define ABI_FONT_VERSION	SET_ABI_VERSION(0, 6)
+#define ABI_INPUT_VERSION	SET_ABI_VERSION(1, 0)
 
 #define MODINFOSTRING1	0xef23fdc5
 #define MODINFOSTRING2	0x10dc023a
@@ -126,6 +128,7 @@ typedef enum {
 #define MOD_CLASS_XINPUT	"X.Org XInput Driver"
 #define MOD_CLASS_FONT		"X.Org Font Renderer"
 #define MOD_CLASS_EXTENSION	"X.Org Server Extension"
+#define MOD_CLASS_INPUT	        "X.Org Input Processing Plugin"
 
 /* This structure is expected to be returned by the initfunc */
 typedef struct {
