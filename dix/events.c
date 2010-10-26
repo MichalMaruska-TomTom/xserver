@@ -1664,7 +1664,8 @@ AllowSome(ClientPtr client, TimeStamp time, DeviceIntPtr thisDev, int newState)
     DeviceIntPtr dev;
     GrabInfoPtr devgrabinfo, grabinfo = &thisDev->deviceGrab;
 
-    thisGrabbed = grabinfo->grab && SameClient(grabinfo->grab, client);
+    thisGrabbed = grabinfo->grab && SameClient(grabinfo->grab, client); /* grabbed &  by this client */
+    ErrorF("%s%s%s: %u\n", proc_color,__FUNCTION__,color_reset, time.milliseconds);
     thisSynced = FALSE;
     otherGrabbed = FALSE;
     othersFrozen = FALSE;
@@ -1685,11 +1686,38 @@ AllowSome(ClientPtr client, TimeStamp time, DeviceIntPtr thisDev, int newState)
                 othersFrozen = TRUE;
         }
     }
+    /* otherGrabbed not used anymore!! */
+    /* still Frozen? ... why ?  */
     if (!((thisGrabbed && grabinfo->sync.state >= FROZEN) || thisSynced))
+	/* `thisSynced' ... attached to another device grab, in SyncMode */
         return;
     if ((CompareTimeStamps(time, currentTime) == LATER) ||
-        (CompareTimeStamps(time, grabTime) == EARLIER))
+        (CompareTimeStamps(time, grabTime) == EARLIER)) {
+        ErrorF("%s returning b/c times are not right:\n"
+               "grab:\t%u\t%u\n"
+               "cur:\t%u\t%u\n"
+               "time:\t%u\t%u\n", __FUNCTION__,
+               grabTime.months,
+               grabTime.milliseconds,
+
+               currentTime.months,
+               currentTime.milliseconds,
+               time.months,
+               time.milliseconds);
         return;
+    }
+    /* below: still used:  thisGrabbed, othersFrozen
+     *  not:  grabTime
+     *
+     *  mmc: should be  (receive (thisGrabbed  thisSynced ) ....
+     *                       .....
+     */
+    /* sounds like a finite-state-machine */
+
+#if debug_mmc
+    ErrorF("%s FSM on sync.state & sync.other\n", __FUNCTION__);
+#endif
+
     switch (newState) {
     case THAWED:               /* Async */
         if (thisGrabbed)
@@ -4870,6 +4898,14 @@ ProcGrabPointer(ClientPtr client)
     if (oldCursor && rep.status == GrabSuccess)
         FreeCursor(oldCursor, (Cursor) 0);
 
+#if debug_mmc
+    time = ClientTimeToServerTime(stuff->time);
+    ErrorF("%s times cur:\t%u\t%u\ntime:\t%u\t%u\n", __FUNCTION__,
+	   currentTime.months,
+	   currentTime.milliseconds,
+	   time.months,
+	   time.milliseconds);
+#endif
     rep.type = X_Reply;
     rep.sequenceNumber = client->sequence;
     rep.length = 0;
@@ -4951,6 +4987,9 @@ ProcUngrabPointer(ClientPtr client)
     grab = device->deviceGrab.grab;
 
     time = ClientTimeToServerTime(stuff->id);
+#if debug_mmc
+    ErrorF ("%s: grab time:\t %u\n", __FUNCTION__, time.milliseconds);
+#endif
     if ((CompareTimeStamps(time, currentTime) != LATER) &&
         (CompareTimeStamps(time, device->deviceGrab.grabTime) != EARLIER) &&
         (grab) && SameClient(grab, client))
@@ -5077,6 +5116,24 @@ GrabDevice(ClientPtr client, DeviceIntPtr dev,
 
         FreeGrab(tempGrab);
     }
+    /* mmc */
+    if (*status != GrabSuccess){
+
+       char* reason = "unknown";
+       switch (*status) {
+       case GrabNotViewable:
+          reason = "GrabNotViewable";
+          break;
+       case GrabFrozen:
+          reason = "GrabFrozen";
+          break;
+       case GrabInvalidTime:
+          reason = "GrabInvalidTime";
+          break;
+       }
+       ErrorF ("%s failing: b/c %s\n", __FUNCTION__, reason);
+    }
+
     return Success;
 }
 
@@ -5097,6 +5154,7 @@ ProcGrabKeyboard(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xGrabKeyboardReq);
 
+    ErrorF("%s%s%s: %u\n", proc_color,__FUNCTION__,color_reset, stuff->time);
     memset(&rep, 0, sizeof(xGrabKeyboardReply));
     mask.core = KeyPressMask | KeyReleaseMask;
 
@@ -5105,8 +5163,35 @@ ProcGrabKeyboard(ClientPtr client)
                         stuff->ownerEvents, stuff->time, &mask, CORE, None,
                         None, &rep.status);
 
-    if (result != Success)
-        return result;
+    if (result != Success) {
+        /* mmc: that means just bad arguments.
+         * the time check result is in rep.status! */
+        if (rep.status != GrabSuccess){
+
+            char* reason = "unknown";
+
+            switch (rep.status) {
+                case GrabNotViewable:
+                    reason = "GrabNotViewable";
+                    break;
+
+                    /* With this code I found the bug in "Sawfish menu".
+                       It was "passing" its grab to another client,
+                       w/o necessary XSync. */
+                case AlreadyGrabbed:
+                    reason = "AlreadyGrabbed";
+                    break;
+                case GrabFrozen:
+                    reason = "GrabFrozen";
+                    break;
+                case GrabInvalidTime:
+                    reason = "GrabInvalidTime";
+                    break;
+            }
+            ErrorF ("%s failing: b/c %s\n", __FUNCTION__, reason);
+        }
+    	return result;
+    }
     rep.type = X_Reply;
     rep.sequenceNumber = client->sequence;
     rep.length = 0;
@@ -5134,10 +5219,22 @@ ProcUngrabKeyboard(ClientPtr client)
     grab = device->deviceGrab.grab;
 
     time = ClientTimeToServerTime(stuff->id);
+    ErrorF("%s%s%s: %u\n", proc_color,__FUNCTION__,color_reset,
+           time.milliseconds);
     if ((CompareTimeStamps(time, currentTime) != LATER) &&
         (CompareTimeStamps(time, device->deviceGrab.grabTime) != EARLIER) &&
         (grab) && SameClient(grab, client) && grab->grabtype == CORE)
         (*device->deviceGrab.DeactivateGrab) (device);
+    else {
+        ErrorF("FAILED:\n");
+        if (CompareTimeStamps(time, currentTime) == LATER)
+            ErrorF("time in future!\n");
+        else if (CompareTimeStamps(time, device->deviceGrab.grabTime)
+                 == EARLIER)
+            ErrorF("time earlier than the Grab!\n");
+        else
+            ErrorF("either not grabbed or by other client!\n");
+    }
     return Success;
 }
 
