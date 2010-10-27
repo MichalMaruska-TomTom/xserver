@@ -153,7 +153,7 @@ WaitForSomething(int *pClientsReady)
     int selecterr;
     static int nready;
     fd_set devicesReadable;
-    CARD32 now = 0;
+    CARD32 now = GetTimeInMillis();
     Bool someReady = FALSE;
 
     FD_ZERO(&clientsReadable);
@@ -187,7 +187,6 @@ WaitForSomething(int *pClientsReady)
         else {
             wt = NULL;
             if (timers) {
-                now = GetTimeInMillis();
                 timeout = timers->expires - now;
                 if (timeout > 0 && timeout > timers->delta + 250) {
                     /* time has rewound.  reset the timers. */
@@ -207,7 +206,7 @@ WaitForSomething(int *pClientsReady)
             XFD_COPYSET(&AllSockets, &LastSelectMask);
         }
 
-        BlockHandler((pointer) &wt, (pointer) &LastSelectMask);
+        BlockHandler((pointer) &wt, (pointer) &LastSelectMask, now);
         if (NewOutputPending)
             FlushAllOutput();
         /* keep this check close to select() call to minimize race */
@@ -221,7 +220,7 @@ WaitForSomething(int *pClientsReady)
             i = Select(MaxClients, &LastSelectMask, NULL, NULL, wt);
         }
         selecterr = GetErrno();
-        WakeupHandler(i, (pointer) &LastSelectMask);
+        WakeupHandler(i, (pointer) &LastSelectMask, now);
         if (i <= 0) {           /* An error or timeout occurred */
             if (dispatchException)
                 return 0;
