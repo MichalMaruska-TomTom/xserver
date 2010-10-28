@@ -139,7 +139,7 @@ DoShowOptions(void)
 /* xf86Events.c */
 
 extern _X_EXPORT void
-xf86Wakeup(void *blockData, int err, void *pReadmask);
+xf86Wakeup(void *blockData, int err, void *pReadmask, Time now);
 extern _X_HIDDEN int
 xf86SigWrapper(int signo);
 extern _X_EXPORT void
