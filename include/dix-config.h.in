@@ -518,4 +518,7 @@
 /* Define if no local socket credentials interface exists */
 #undef NO_LOCAL_CLIENT_CRED
 
+/* define to 1 to use an alternative key-event handling. */
+#undef MMC_PIPELINE
+
 #endif /* _DIX_CONFIG_H_ */
