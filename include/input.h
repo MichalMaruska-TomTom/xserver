@@ -415,6 +415,9 @@ extern void ProcessKeyboardEvent(InternalEvent * /*ev */ ,
 extern Bool LegalModifier(unsigned int /*key */ ,
                           DeviceIntPtr /*pDev */ );
 
+/* After the last event read, or possibly "no event" available from the Select()
+   call, this time, NOW, can push us futher in the input processing-interpreting */
+extern _X_EXPORT void ProcessInputEventsPush(Time now);
 extern _X_EXPORT void ProcessInputEvents(void);
 
 extern _X_EXPORT void InitInput(int /*argc */ ,
