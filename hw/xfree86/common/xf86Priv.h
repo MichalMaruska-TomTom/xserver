@@ -137,7 +137,7 @@ DoShowOptions(void)
 /* xf86Events.c */
 
 extern _X_EXPORT void
-xf86Wakeup(pointer blockData, int err, pointer pReadmask);
+xf86Wakeup(pointer blockData, int err, pointer pReadmask, Time now);
 extern _X_HIDDEN int
 xf86SigWrapper(int signo);
 extern _X_EXPORT void
