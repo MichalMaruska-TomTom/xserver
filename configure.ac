@@ -626,6 +626,7 @@ AC_ARG_ENABLE(windowswm,      AS_HELP_STRING([--enable-windowswm], [Build XWin w
 AC_ARG_ENABLE(libdrm,         AS_HELP_STRING([--enable-libdrm], [Build Xorg with libdrm support (default: enabled)]), [DRM=$enableval],[DRM=yes])
 AC_ARG_ENABLE(clientids,      AS_HELP_STRING([--disable-clientids], [Build Xorg with client ID tracking (default: enabled)]), [CLIENTIDS=$enableval], [CLIENTIDS=yes])
 AC_ARG_ENABLE(pciaccess, AS_HELP_STRING([--enable-pciaccess], [Build Xorg with pciaccess library (default: enabled)]), [PCI=$enableval], [PCI=yes])
+AC_ARG_ENABLE(pipeline,      AS_HELP_STRING([--enable-pipeline], [Use the new keyboard event processing pipeline (default: no)]), [MMC_PIPELINE=$enableval], [MMC_PIPELINE=no])
 
 dnl DDXes.
 AC_ARG_ENABLE(xorg,    	      AS_HELP_STRING([--enable-xorg], [Build Xorg server (default: auto)]), [XORG=$enableval], [XORG=auto])
@@ -1190,6 +1191,13 @@ AM_CONDITIONAL(XAA, test "x$XAA" = xyes)
 AM_CONDITIONAL(VGAHW, test "x$VGAHW" = xyes)
 AM_CONDITIONAL(VBE, test "x$VBE" = xyes)
 AM_CONDITIONAL(INT10MODULE, test "x$INT10MODULE" = xyes)
+
+AM_CONDITIONAL(MMC_PIPELINE, [test "x$MMC_PIPELINE" = xyes])
+if test "x$MMC_PIPELINE" = xyes; then
+	AC_DEFINE(MMC_PIPELINE, 1, [use the alternative pipeline of keyboard input events])
+fi
+AC_SUBST(MMC_PIPELINE)
+
 
 AC_DEFINE(SHAPE, 1, [Support SHAPE extension])
 
