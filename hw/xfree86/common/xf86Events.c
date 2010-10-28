@@ -121,6 +121,13 @@ typedef struct x_IHRec {
 
 static IHPtr InputHandlers = NULL;
 
+/*  Called from Dispatch (to serve the events collected in signal handlers?)  But
+ *  more importantly from WakeupHandler (after drivers have a go on reading from
+ *  their FDs)!  But, that means that they will not be in chronological order! If I
+ *  have 2 fds for a keyboard.  Unless either the driver handles both of them and
+ *  takes care, or ... we sort them later. (todo)
+ */
+
 Bool
 LegalModifier(unsigned int key, DeviceIntPtr pDev)
 {
@@ -160,9 +167,21 @@ SetTimeSinceLastInputEvent(void)
 void
 ProcessInputEvents(void)
 {
+/* note: GetTimeInMillis(); would be incorrect.
+   * So we use the conservative (nothing saying) 0.
+   * Hopefully more calls of this get replaced with ProcessInputEventsPush. */
+  ProcessInputEventsPush(0);
+}
+
+void
+ProcessInputEventsPush(Time now)
+{
     int x, y;
 
-    mieqProcessInputEvents();
+    if (now)
+        mieqProcessInputEventsTime(now);
+    else
+        mieqProcessInputEvents();
 
     /* FIXME: This is a problem if we have multiple pointers */
     miPointerGetPosition(inputInfo.pointer, &x, &y);
@@ -242,10 +261,11 @@ xf86ProcessActionEvent(ActionEvent action, void *arg)
 
 /* ARGSUSED */
 void
-xf86Wakeup(void *blockData, int err)
+xf86Wakeup(void *blockData, int err, Time now)
 {
     if (xf86VTSwitchPending())
         xf86VTSwitch();
+    ProcessInputEventsPush(now);
 }
 
 /*
