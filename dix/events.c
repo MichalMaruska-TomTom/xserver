@@ -1611,10 +1611,15 @@ ActivateKeyboardGrab(DeviceIntPtr keybd, GrabPtr grab, TimeStamp time,
     if (keybd->valuator)
         keybd->valuator->motionHintWindow = NullWindow;
     DoFocusEvents(keybd, oldWin, grab->window, NotifyGrab);
+#if MMC_PIPELINE
+    /* TimeStamp vs */
+    grabinfo->grabTime = time;
+#else
     if (syncEvents.playingEvents)
         grabinfo->grabTime = syncEvents.time;
     else
         grabinfo->grabTime = time;
+#endif  /* MMC_PIPELINE */
     CopyGrab(grabinfo->activeGrab, grab);
     grabinfo->grab = grabinfo->activeGrab;
     grabinfo->fromPassiveGrab = passive;
