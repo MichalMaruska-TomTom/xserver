@@ -109,8 +109,14 @@ static PluginInstance*
 xkb_find_plugin_by_name(DeviceIntPtr keybd, char* name)
 {
     PluginInstance* plugin = keybd->pipeline;
+#if DEBUG
+    ErrorF("%s: searching for %s\n", __FUNCTION__, name);
+#endif
     while (plugin && strcmp(PLUGIN_NAME(plugin), name)) /* != 0*/
     {
+#if DEBUG
+        ErrorF("\tskipping over %s\n", PLUGIN_NAME(plugin));
+#endif
         plugin = plugin->next;
     }
     return plugin;
@@ -120,8 +126,14 @@ static PluginInstance*
 xkb_find_plugin_by_id(DeviceIntPtr keybd, int id)
 {
     PluginInstance* plugin = keybd->pipeline;
+#if DEBUG
+    ErrorF("%s: searching for %d\n", __FUNCTION__, id);
+#endif
     while (plugin && (id != plugin->id))
     {
+#if DEBUG
+        ErrorF("\tskipping over %s\n", PLUGIN_NAME(plugin));
+#endif
         plugin = plugin->next;
     }
     return plugin;
@@ -157,10 +169,17 @@ write_plugin_names(DeviceIntPtr keybd,unsigned char *str)
     {
         unsigned char len = strlen(PLUGIN_NAME(plugin));
         *(CARD32*)str = plugin->id; /* fixme: might be 2 bytes only.  Endianess!! */
+#if 0
+        ((CARD32*)str)++;
+#else
         str = (unsigned char*)(((CARD32*)str) + 1);
+#endif
         /* fixme: len < 256, as we have just 1 byte, where is that enforced!? */
         *str = len;
         str++;
+#if DEBUG
+        ErrorF("%s: writing %d, %s\n", __FUNCTION__, len, PLUGIN_NAME(plugin));
+#endif
         memcpy(str, PLUGIN_NAME(plugin), len);
         str += len;
         plugin = plugin->next;
@@ -180,6 +199,7 @@ xkb_remove_plugin (PluginInstance* plugin)
     PluginInstance* prev;
     DevicePluginRec* plugin_class;
     assert (plugin);
+    ErrorF ("%s: %s\n", __FUNCTION__, PLUGIN_NAME(plugin));
 
     /* remove from the double-linked list */
     prev = plugin->prev;
@@ -196,6 +216,7 @@ xkb_remove_plugin (PluginInstance* plugin)
     if (plugin_class->module)
     {
         plugin_class->ref_count --;
+        ErrorF ("%s: ref count now: %d\n", __FUNCTION__, plugin_class->ref_count);
         if (plugin_class->ref_count == 0)
         {
 #if 0
@@ -263,6 +284,9 @@ load_plugin(const char* filename)    /* DeviceIntPtr dev, */
 #endif  /* NO_MODULE_EXTS */
 };
 
+
+
+/* xkb.c  Why in kbproto? */
 /* Insert a new plugin between 2 other plugins. Possibly load a module. */
 int
 ProcXkbSetPlugin(ClientPtr client)
@@ -273,6 +297,8 @@ ProcXkbSetPlugin(ClientPtr client)
 
     REQUEST(xkbSetPluginReq);      /* this declares stuff variable to the right type ? */
     /* register type *stuff = (type *)client->requestBuffer */
+    ErrorF("%s: start\n", __FUNCTION__);
+    /* fixme:   */
     REQUEST_AT_LEAST_SIZE(xkbSetPluginReq);
     /* This is just a check. the request should be read according to its size
      *  in the `envelope' */
@@ -360,7 +386,7 @@ ProcXkbSetPlugin(ClientPtr client)
             PluginInstance* plugin = plugin_class->instantiate(dev, plugin_class);
             plugin->id = ++dev->pipeline_counter;
             if (plugin)
-                insert_plugin_around (dev, plugin, around, stuff->before);
+                insert_plugin_around (dev, plugin, around, stuff->before); /* INSERT_BEFORE "xkb-auto-repeat"*/
             else
                 return BadAlloc;
         }
@@ -368,6 +394,7 @@ ProcXkbSetPlugin(ClientPtr client)
     return client->noClientException;
 }
 
+/* xkb.c */
 #define old 0
 int
 ProcXkbConfigPlugin(ClientPtr client, Bool send)
