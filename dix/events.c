@@ -1053,9 +1053,10 @@ MonthChangedOrBadTime(InternalEvent *ev)
      * previously frozen device.
      * Is replaying from different pipelines synced? */
 
-    if ((currentTime.milliseconds - ev->any.time) > TIMESLOP)
+    if ((currentTime.milliseconds - ev->any.time) > TIMESLOP) {
         currentTime.months++;
-    else {
+        currentTime.milliseconds = ev->any.time;
+    } else {
 #if debug_mmc
 	ErrorF("%s%s%s\n\tevent time: %u\n\tcurrenttime (variable): %u (month %u)"
 	       "..... difference: %ld\n",
@@ -1070,6 +1071,8 @@ MonthChangedOrBadTime(InternalEvent *ev)
 #endif
 
 #if !MMC_PIPELINE
+        // ok, event time is BENEATH  currentTime, let's leave it.
+        // but then grab & allow_events has to allow this situation!
 	/* [03 giu 05] ... so this can be re-enabled */
 	ev->any.time = currentTime.milliseconds;
 #endif
@@ -1084,15 +1087,18 @@ NoticeTime(InternalEvent *ev)
 {
     if (ev->any.time < currentTime.milliseconds)
         MonthChangedOrBadTime(ev);
-    currentTime.milliseconds = ev->any.time;
+    else
+        // ok, going ahead!
+        currentTime.milliseconds = ev->any.time;
     lastDeviceEventTime = currentTime;
 }
 
 void
 NoticeEventTime(InternalEvent *ev)
 {
-    if (!syncEvents.playingEvents)
-        NoticeTime(ev);
+    // mmc: I should/do handle this
+    // if (!syncEvents.playingEvents)
+    NoticeTime(ev);
 }
 
 /**************************************************************************
