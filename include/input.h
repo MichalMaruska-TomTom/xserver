@@ -167,6 +167,10 @@ typedef struct _DeviceRec {
     ProcessInputProc processInputProc;  /* current */
     ProcessInputProc realInputProc;     /* deliver */
     ProcessInputProc enqueueInputProc;  /* enqueue */
+    void (*thawProc)(DeviceIntPtr);
+    /* The time should be the upper bound of time for which all
+     * events were read.  I use time obtained before Select(). */
+    void (*pushTimeProc)(DeviceIntPtr, Time time);
     Bool on;                    /* used by DDX to keep state */
 } DeviceRec, *DevicePtr;
 
