@@ -1347,6 +1347,16 @@ xf86PostKeyEventP(DeviceIntPtr device,
 void
 xf86PostKeyEventM(DeviceIntPtr device, unsigned int key_code, int is_down)
 {
+    xf86PostKeyEventMTime(device, key_code, is_down, 0);
+}
+
+void
+xf86PostKeyEventMTime(DeviceIntPtr	device,
+                       unsigned int	key_code,
+                       int		is_down,
+                       Time time)
+{
+
 #if XFreeXDGA
     DeviceIntPtr pointer;
 
@@ -1361,7 +1371,8 @@ xf86PostKeyEventM(DeviceIntPtr device, unsigned int key_code, int is_down)
     }
 #endif
 
-    QueueKeyboardEvents(device, is_down ? KeyPress : KeyRelease, key_code);
+    QueueKeyboardEventsTime(device,
+                            is_down ? KeyPress : KeyRelease, key_code, time);
 }
 
 void
@@ -1372,6 +1383,18 @@ xf86PostKeyboardEvent(DeviceIntPtr device, unsigned int key_code, int is_down)
     valuator_mask_zero(&mask);
     xf86PostKeyEventM(device, key_code, is_down);
 }
+
+/* New entry point for keyboard drivers, which provide the event's timestamp. */
+/* fixme: drop this, useless. */
+void
+xf86PostKeyboardTimeEvent(DeviceIntPtr      device,
+			  unsigned int      key_code,
+			  int               is_down,
+			  Time      time)
+{
+    xf86PostKeyEventMTime(device, key_code, is_down, time);
+}
+
 
 InputInfoPtr
 xf86FirstLocalDevice(void)
