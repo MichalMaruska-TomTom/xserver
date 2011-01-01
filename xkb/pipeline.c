@@ -244,7 +244,7 @@ start_plugin_pipeline(InternalEvent *event, DeviceIntPtr keybd)
 
     if (plugin && PluginClass(plugin)->ProcessEvent && !plugin_frozen(plugin))
 	/* the event is still owned by us. */
-	PluginClass(plugin)->ProcessEvent(plugin, event, KEEP_OWNERSHIP);
+	PluginClass(plugin)->ProcessEvent(plugin, event, CALLER_OWNS);
     /* neither we are the owner. it's in a static array! */
     else {
 	assert (!plugin);
