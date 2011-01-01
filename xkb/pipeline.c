@@ -99,7 +99,7 @@ xkb_init_pipeline(DeviceIntPtr device)
     RegisterTimeBlockAndWakeupHandlers((TimeBlockHandlerProcPtr) set_timeout,
                                        (TimeWakeupHandlerProcPtr) NoopDDA, device);
 
-    device->last_upper_bound = device->time = GetTimeInMillis();
+    // device->last_upper_bound = device->time = GetTimeInMillis();
 }
 
 
@@ -109,7 +109,6 @@ push_time_on_keyboard(DeviceIntPtr keybd, Time upper_bound)
 {
     /* assert (keybd->pipeline);*/
     PluginInstance* plugin = keybd->pipeline;
-    keybd->last_upper_bound = upper_bound;
 
     if (keybd->time < upper_bound) { /* no event  */
         if (plugin->wakeup_time <= upper_bound) /* recent */
