@@ -529,6 +529,7 @@ typedef struct _SpriteInfoRec {
 #define KEYBOARD_OR_FLOAT       5       /* Keyboard master for this device or this device if floating */
 #define POINTER_OR_FLOAT        6       /* Pointer master for this device or this device if floating */
 
+#define MMC_PIPELINE 1
 #if MMC_PIPELINE
 typedef struct _DevicePluginRec DevicePluginRec;
 typedef struct _PluginInstance PluginInstance;
