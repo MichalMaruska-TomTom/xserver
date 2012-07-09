@@ -64,7 +64,8 @@ xkb_init_pipeline(DeviceIntPtr device)
     PluginInstance* plugin;
 
     assert(!device->pipeline);
-    ErrorF("%s: configuring the pipe-line for ... %s\n", __FUNCTION__, device->name);
+    ErrorF("%s: configuring the pipe-line for ... %s\n", __FUNCTION__,
+           device->name);
 
     /* let's build this pipeline:
      *
@@ -100,7 +101,8 @@ xkb_init_pipeline(DeviceIntPtr device)
      * timers, and blockHandlers to set such timeout. So i register one! */
     RegisterTimeBlockAndWakeupHandlers((TimeBlockHandlerProcPtr) set_timeout,
 				       (TimeWakeupHandlerProcPtr) NoopDDA, device);
-    ErrorF("...block handler set_timeout registered, %s exits (ok)\n", __FUNCTION__);
+    ErrorF("...block handler set_timeout registered, %s exits (ok)\n",
+           __FUNCTION__);
 
     // device->last_upper_bound = device->time = GetTimeInMillis();
 }
@@ -210,8 +212,9 @@ insert_plugin_around (DeviceIntPtr keybd, PluginInstance* plugin,
     PluginInstance* prev;
     // bug!    assert (plugin->dev == keybd);
 
-    ErrorF ("%s: %s %s %s\n", __FUNCTION__, PLUGIN_NAME(plugin), before?"before":"after",
-            name_of_precedent);
+   ErrorF ("%s: %s %s %s\n", __FUNCTION__, PLUGIN_NAME(plugin),
+           before?"before":"after",
+	   name_of_precedent);
     /* find it... */
     assert (keybd->pipeline);
 
@@ -295,10 +298,12 @@ static void
 start_plugin_pipeline(InternalEvent *event, DeviceIntPtr keybd)
 {
     PluginInstance* plugin = keybd->pipeline;
-    ErrorF("%s: %s %s\n", __FUNCTION__, keybd->name, event_names[event->any.type - 2 ]);
+    ErrorF("%s: %s %s\n", __FUNCTION__, keybd->name,
+           event_names[event->any.type - 2 ]);
 #if 0
     if (keybd->last_upper_bound > event->u.keyButtonPointer.time)
-	ErrorF("%s: processing event coming from time %d before last push %d!\n", __FUNCTION__,
+	ErrorF("%s: processing event coming from time %d before last push %d!\n",
+               __FUNCTION__,
 	       (int) event->u.keyButtonPointer.time,
 	       (int) keybd->last_upper_bound);
 
@@ -316,9 +321,9 @@ start_plugin_pipeline(InternalEvent *event, DeviceIntPtr keybd)
     /* neither we are the owner. it's in a static array! */
     else {
 	assert (!plugin);
-	ErrorF("%s: no keyboard pipeline processor available for events. Dropping them!\n",
-	       __FUNCTION__);
-      }
+	ErrorF("%s: no keyboard pipeline processor available for events. Dropping"
+               " them!\n", __FUNCTION__);
+    }
 #if  DEBUG_PIPELINE
     ErrorF("---------------- end of pipeline activity (from a key event)\n");
 #endif
