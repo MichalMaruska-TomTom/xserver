@@ -20,12 +20,15 @@
 #include "xkb.h"
 
 
+#include "list.h"
 
+#define TIME_FORMAT "%lu"
 typedef struct
 {
-    QdEventPtr		pending, pendtail;
-
-    /* The ending time. This is used when we thaw (no interaction with the event queue). */
+    // so now QdEventPtr is meant to be used inside Doubly-linked list.
+    struct xorg_list pending;
+    /* The ending time. This is used when we thaw (no interaction with
+     * the event queue). */
     Time		time;
 } queue_data;
 
@@ -39,8 +42,8 @@ queue_count_events(queue_data* event_list)
     int i = 0;
     QdEventPtr pending;
 
-    for (pending = event_list->pending; pending; pending = pending->next)
-	i++;
+    xorg_list_for_each_entry(pending, &event_list->pending, next)
+        i++;
     return i;
 }
 #endif	/* DEBUG_PIPELINE */
@@ -51,7 +54,7 @@ queue_count_events(queue_data* event_list)
  * (copied from ../dix/events.c  EnqueueEvent)
  * */
 static void
-queue_insert(queue_data *data, InternalEvent *ev, Bool owner)
+queue_append(queue_data *data, InternalEvent *ev, Bool owner)
 {
     DeviceEvent *event = &ev->device_event;
     int eventlen = event->length;
@@ -60,24 +63,14 @@ queue_insert(queue_data *data, InternalEvent *ev, Bool owner)
     /* assert (is_device_event(ev)); */
     qe = (QdEventPtr)malloc(sizeof(QdEventRec) + eventlen);
 
-    qe->next = (QdEventPtr)NULL;
+    xorg_list_append(&qe->next, &data->pending);
+
     qe->event = (InternalEvent *)(qe + 1);
     memcpy(qe->event, event, eventlen);
 
     if (owner)
 	free(event);
 
-    if (!data->pending)
-    {
-	/* first element of the list -> create the list! */
-	data->pending = qe;
-	data->pendtail = qe;
-    }
-    else
-    {
-	(data->pendtail)->next = qe;
-	data->pendtail = qe;
-    }
 }
 
 static void
@@ -86,7 +79,7 @@ queue_process_key_event(PluginInstance* plugin, InternalEvent *event, Bool owner
 //    CHECKEVENT(event);
     if (plugin_frozen(plugin->next))
     {
-	queue_insert(plugin->data, event, owner);
+	queue_append(plugin->data, event, owner);
         plugin->wakeup_time = 0;
     } else {
 	PluginClass(plugin->next)->ProcessEvent(plugin->next, event, owner);
@@ -125,21 +118,37 @@ queue_thaw(PluginInstance* plugin, Time time)
     queue_data* data = (queue_data*) plugin->data;
 
     /* push from the queue. */
-    while (! plugin_frozen(next) && (data->pending))
-    {
-	PluginClass(next)->ProcessEvent(next, data->pending->event,
+    while (! plugin_frozen(next) && !(xorg_list_is_empty(&data->pending))) {
+        QdEventPtr event = xorg_list_first_entry(&data->pending,
+                                                 QdEventRec, next);
+	PluginClass(next)->ProcessEvent(next,
+                                        event,
+#if 0
+                                        container_of(&data->pending,
+                                                     QdEventRec, next),
+#endif
 					FALSE); /* we _don't_ pass the ownership! */
+        /* fixme: why not? */
 	{
 	    /* remove from the list: */
+#if 0
 	    QdEventPtr qe;
 	    qe = data->pending->next;
+
 	    free(data->pending);
 	    data->pending = qe;
+#else
+            // QdEventPtr qe = data->pending.next;
+            xorg_list_del(&event->next);
+            free(event);
+#endif
 	}
     }
 
+#if 0
     if (! data->pending)
 	data->pendtail = 0;
+#else
 
 #endif
     /* if still not frozen, push by time: */
@@ -160,7 +169,10 @@ static PluginInstance*
 freeze_queue_init(DeviceIntPtr dev, DevicePluginRec* plugin_class)
 {
     PluginInstance* plugin = calloc(1, sizeof(PluginInstance));
-    plugin->data = calloc(1, sizeof(queue_data));
+
+    queue_data* queue = calloc(1, sizeof(queue_data));
+    xorg_list_init(&queue->pending);
+    plugin->data = queue;
 
     plugin->pclass = plugin_class;
     plugin->device = dev;
