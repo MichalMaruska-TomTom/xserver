@@ -136,7 +136,9 @@ queue_thaw(PluginInstance* plugin, Time time)
     queue_data* data = (queue_data*) plugin->data;
 
 #if DEBUG_PIPELINE
-    ErrorF("%s: %d events in the queue!\n", __FUNCTION__, queue_count_events(data));
+    ErrorF("%s!\n", __FUNCTION__);
+    ErrorF("%s: %d events in the queue!\n", __FUNCTION__,
+           queue_count_events(data));
 #endif
 
     /* push from the queue. */
