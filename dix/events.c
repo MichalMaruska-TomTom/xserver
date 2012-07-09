@@ -1652,7 +1652,7 @@ DeactivateKeyboardGrab(DeviceIntPtr keybd)
 {
     GrabPtr grab = keybd->deviceGrab.grab;
     DeviceIntPtr dev;
-    DeviceIntPtr devices;
+    // DeviceIntPtr devices; mmc:?
     WindowPtr focusWin = keybd->focus ? keybd->focus->win
         : keybd->spriteInfo->sprite->win;
     Bool wasImplicit = (keybd->deviceGrab.fromPassiveGrab &&
@@ -1851,7 +1851,7 @@ ReleaseActiveGrabs(ClientPtr client)
     ErrorF("%s\n", __FUNCTION__);
     do {
         done = TRUE;
-        for (dev = inputInfo.devices; dev; dev = dev->next) {
+        for (dev = devices; dev; dev = dev->next) { /* inputInfo.devices */
             if (dev->deviceGrab.grab &&
                 SameClient(dev->deviceGrab.grab, client)) {
                 (*dev->deviceGrab.DeactivateGrab) (dev);
