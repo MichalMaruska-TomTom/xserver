@@ -30,6 +30,7 @@ extern int ProcXkbSetDebuggingFlags(ClientPtr client);
 
 extern void XkbExtensionInit(void);
 
+#define MMC_PIPELINE 1
 #if MMC_PIPELINE
 extern DevicePluginRec ar_plugin;
 
