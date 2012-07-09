@@ -4968,12 +4968,16 @@ ProcGrabPointer(ClientPtr client)
         FreeCursor(oldCursor, (Cursor) 0);
 
 #if debug_mmc
-    time = ClientTimeToServerTime(stuff->time);
-    ErrorF("%s times cur:\t%u\t%u\ntime:\t%u\t%u\n", __FUNCTION__,
-	   currentTime.months,
-	   currentTime.milliseconds,
-	   time.months,
-	   time.milliseconds);
+#if 0
+    {
+        TimeStamp time = ClientTimeToServerTime(stuff->time);
+        ErrorF("%s times cur:\t%u\t%u\ntime:\t%u\t%u\n", __FUNCTION__,
+               currentTime.months,
+               currentTime.milliseconds,
+               time.months,
+               time.milliseconds);
+    }
+#endif
 #endif
     rep.type = X_Reply;
     rep.sequenceNumber = client->sequence;
