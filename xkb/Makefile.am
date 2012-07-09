@@ -9,6 +9,7 @@ DDX_SRCS = \
         ddxLEDs.c \
         ddxLoad.c
 
+PIPELINE_SRCS = freeze-queue.c pipeline.c plugin-AR.c core-plugin.c
 if MMC_PIPELINE
 PIPELINE_SRCS = freeze-queue.c pipeline.c plugin-AR.c core-plugin.c
 else
