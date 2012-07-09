@@ -28,6 +28,8 @@ extern int ProcXkbGetDeviceInfo(ClientPtr client);
 extern int ProcXkbSetDeviceInfo(ClientPtr client);
 extern int ProcXkbSetDebuggingFlags(ClientPtr client);
 
+#define MMC_PIPELINE 1
+
 #if MMC_PIPELINE
 // extern DevicePluginRec ar_plugin;
 
