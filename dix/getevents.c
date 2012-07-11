@@ -156,7 +156,7 @@ key_autorepeats(DeviceIntPtr pDev, int key_code)
                (1 << (key_code & 7)));
 }
 
-static void
+/*static*/ void
 init_event(DeviceIntPtr dev, DeviceEvent *event, Time ms)
 {
     memset(event, 0, sizeof(DeviceEvent));
