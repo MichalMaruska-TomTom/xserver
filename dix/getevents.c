@@ -160,7 +160,7 @@ key_autorepeats(DeviceIntPtr pDev, int key_code)
                (1 << (key_code & 7)));
 }
 
-static void
+/*static*/ void
 init_touch_ownership(DeviceIntPtr dev, TouchOwnershipEvent *event, Time ms)
 {
     memset(event, 0, sizeof(TouchOwnershipEvent));
