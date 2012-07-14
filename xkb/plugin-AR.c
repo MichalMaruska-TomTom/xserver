@@ -12,10 +12,13 @@
 
 /* If I could get the repeat-rate w/o using XKB... */
 
+/* 1 important, 2 burocracy, 4 all invocations */
 #define DEBUG_AUTOREPEAT 1
 
 #include <X11/extensions/XKBsrv.h>
 
+#define USE_COLORS 1
+#include "color-debug.h"
 
 #define TIME_FORMAT "%lu"
 
@@ -93,11 +96,6 @@ ar_synthesize_event(PluginInstance* plugin,
 // next/first repeat.  But it might depend on devices frozen!
 #define first_repeats(plugin)    ((ar_plugin_data*) plugin->data)->repeats
 
-#define color_trace 1
-#include "color-debug.h"
-#ifdef color_trace
-#endif
-
 
 /* put in the ordered single-linked list */
 static void
@@ -108,6 +106,17 @@ insert_into_repeats(PluginInstance* plugin, key_repeat_info* node)
 
     Time expires = node->time;
     key_repeat_info **prev;
+
+#if (DEBUG_AUTOREPEAT & 2)
+    {
+	XkbSrvInfoPtr xkbi = plugin->device->key->xkbInfo;
+	const KeySym *sym = XkbKeySymsPtr(xkbi->desc,node->key);
+	if ((!sym) || (! isalpha(* (unsigned char*) sym)))
+	    sym = (const KeySym*) " ";
+	ErrorF("%s%s:  %d(%c) at %u%s\n", repeat_color, __FUNCTION__,  node->key, *sym,
+               node->time, color_reset);
+    }
+#endif
 
     // skip to the end:
     for (prev = &(((ar_plugin_data*) plugin->data)->repeats);
@@ -153,6 +162,10 @@ ar_process_and_reinsert(PluginInstance* plugin, key_repeat_info* node,
 
 
     if (!node->press) {
+#if (DEBUG_AUTOREPEAT & 1)
+	ErrorF("%s%s: RELEASE %d (before " TIME_FORMAT "(now))%s\n", repeat_color, __FUNCTION__,
+	       key, time, color_reset);
+#endif
 	/* todo: this should use:
 	 *  if (_XkbWantsDetectableAutoRepeat(pClient))
 	 */
@@ -164,8 +177,18 @@ ar_process_and_reinsert(PluginInstance* plugin, key_repeat_info* node,
     }
 
     if (plugin_frozen(plugin->next)) {
+#if DEBUG_AUTOREPEAT
+        ErrorF("%s%s: the keyboard is now frozen: we still have to push "
+               "the Press. we'll wait%s\n",
+               repeat_color, __FUNCTION__, color_reset);
+#endif
         return;
     }
+
+#if (DEBUG_AUTOREPEAT & 1)
+    ErrorF("%s%s: PRESS %d  (before " TIME_FORMAT "(now))%s\n",
+           repeat_color, __FUNCTION__, key, time, color_reset);
+#endif
 
     ar_synthesize_event(plugin,
 			plugin->device, KeyPress,key, time);
@@ -176,6 +199,12 @@ ar_process_and_reinsert(PluginInstance* plugin, key_repeat_info* node,
 	int delay = xkbi->desc->ctrls->repeat_interval;
 	if (delay == 0)
 	    delay = 25;		/* fixme! */
+
+#if (DEBUG_AUTOREPEAT & 1)
+	ErrorF("%snext repeat of this key after: %d%s\n", repeat_color,
+	       delay,
+	       color_reset);
+#endif
 
 	/* remove from the queue */
 	first_repeats(plugin) = node->next; /* fixme! */
@@ -204,17 +233,35 @@ ar_push_events(PluginInstance* plugin, /* CARD32 month,*/ Time time)
     /* do we have something in the queue? */
     /* but we don't know any time... do we? */
     if (scheduled_repeats) {
-	int generated = 0;
+        int generated = 0;
+#if DEBUG_AUTOREPEAT & 4
+        ErrorF("%s%s: do we have something to repeat before time: %d:"
+            TIME_FORMAT " ?%s\n",
+            repeat_color, __FUNCTION__, 0 /*month*/, time, color_reset);
+#endif
 	while (!plugin_frozen(next) && (time >= scheduled_repeats->time)) {
-	    ar_process_and_reinsert(plugin, scheduled_repeats,
-                                    scheduled_repeats->time);
-	    generated++;
-	    scheduled_repeats = first_repeats(plugin);
-	}
+#if DEBUG_AUTOREPEAT & 2
+        ErrorF("%s%s " TIME_FORMAT "%s\n", repeat_color, __FUNCTION__,
+            scheduled_repeats->time,
+            color_reset);
+#endif
+        ar_process_and_reinsert(plugin, scheduled_repeats,
+            scheduled_repeats->time);
+        generated++;
+        scheduled_repeats = first_repeats(plugin);
+    }
+#if DEBUG_AUTOREPEAT & 2
+	ErrorF("%s%s%s %d total generated events:\n", repeat_color, __FUNCTION__,
+            color_reset, generated);
+#endif
 	return TRUE;
     } else {
+#if DEBUG_AUTOREPEAT & 4
+	ErrorF("%s%s nothing available now%s\n", repeat_color, __FUNCTION__,
+            color_reset);
+#endif
 	return FALSE;
-    }
+    };
 }
 
 
@@ -227,6 +274,10 @@ ar_start_keycode(PluginInstance* plugin, KeyCode key, CARD32 now)
     int delay;
 
     if (keycode_in_repeats_p(plugin, key)) {
+#if 1
+        /* fixme: this should not ignore it. It should raise a counter! */
+        ErrorF("%s: key %u already in Repeats, ignoring\n", __FUNCTION__, key);
+#endif
     } else {
         /* insert into the list of `repeating' keys */
         key_repeat_info* node = (key_repeat_info*)malloc(sizeof(key_repeat_info));
@@ -240,6 +291,17 @@ ar_start_keycode(PluginInstance* plugin, KeyCode key, CARD32 now)
             delay = 190;
         node->time = now + delay;
         insert_into_repeats(plugin, node);
+#if DEBUG_AUTOREPEAT & 4
+        ErrorF("%s: %u %u\n", __FUNCTION__, key, delay);
+        {
+            const KeySym *sym= XkbKeySymsPtr(xkbi->desc,key);
+            if ((!sym) || (! isalpha(* (unsigned char*) sym)))
+                sym = (const KeySym*) " ";
+            ErrorF("%sAdding a repeating key %d (%s%c%s) at " TIME_FORMAT ", starting time "
+                   TIME_FORMAT "%s\n", repeat_color, key, key_color, (char)*sym, repeat_color,
+                   node->time, now, color_reset);
+        }
+#endif
     }
 }
 
@@ -249,17 +311,28 @@ ar_cancel_key(PluginInstance* plugin, KeyCode key)
 {
    key_repeat_info **prev;
 
+#if (DEBUG_AUTOREPEAT & 4)
+   ErrorF("%s%s: searching for the key %d%s\n",
+          repeat_color, __FUNCTION__, key, color_reset);
+#endif
+
    // assert (first_repeats(plugin));
    if (first_repeats(plugin))
      for (prev = &(((ar_plugin_data*) plugin->data)->repeats); *prev; prev = &(*prev)->next) {
          if ((*prev)->key == key) {
 	       key_repeat_info* tmp;
+#if (DEBUG_AUTOREPEAT & 2)
+	       ErrorF("%s%s: good. the key %d was one of them%s\n",
+                      repeat_color, __FUNCTION__, key, color_reset);
+#endif
+
 	       tmp = (*prev)->next;
 	       free(*prev);
 	       *prev = tmp;
 	       return;
 	   }
        };
+#if 1
    {
        XkbSrvInfoPtr xkbi = plugin->device->key->xkbInfo;
        XkbDescPtr xkb = xkbi->desc;
@@ -268,6 +341,13 @@ ar_cancel_key(PluginInstance* plugin, KeyCode key)
 		  " remove from auto-repeat list%s\n",
 		  repeat_color, __FUNCTION__, key, color_reset);
    }
+#else
+   /* i could signal here, that something suspicious happens. But it is perfectly
+    * possible that the keys was not AR-ed.
+    * think Shift_L (modifiers) */
+   ErrorF("%s%s: searching for the key %d FAILED!%s\n", repeat_color, __FUNCTION__,
+	  key, color_reset);
+#endif
 }
 
 
@@ -297,6 +377,10 @@ ar_set_wakeup(PluginInstance *plugin)
     if (repeats)
     {
 	plugin->wakeup_time = repeats->time;
+#if DEBUG_AUTOREPEAT & 2
+         ErrorF("%s wakeup time is " TIME_FORMAT "! We have %d events!\n", __FUNCTION__,
+                plugin->wakeup_time, ar_count_events(repeats));
+#endif
     } else
 	plugin->wakeup_time = 0;
 }
@@ -311,11 +395,16 @@ ar_finish(PluginInstance* plugin)
     plugin->frozen = plugin->next->frozen;
 
     if (plugin_frozen(plugin)) {
+#if DEBUG_AUTOREPEAT & 2
+        if (first_repeats(plugin))
+            ErrorF("\n%s frozen, But we have %d events!\n", __FUNCTION__,
+            ar_count_events(first_repeats(plugin)));
+#endif
 	/* mmc: We might accept an event if we don't keep one, but there is no use for it? */
-	plugin->wakeup_time = 0;
+        plugin->wakeup_time = 0;
     } else {
 	ar_set_wakeup(plugin);
-    }
+    };
 }
 
 
@@ -329,6 +418,9 @@ ar_process_key_event(PluginInstance* plugin,
    XkbSrvInfoPtr xkbi =  keybd->key->xkbInfo;
    XkbDescPtr xkb = xkbi->desc;
 
+#if DEBUG_AUTOREPEAT & 4
+   ErrorF("%s: %s " TIME_FORMAT "\n", __FUNCTION__, keybd->name, event->any.time);
+#endif
 
    /* we might check against repeated, to verify the DDX does not repeat itself */
    /* produce all pre-events (until possibly frozen) */
@@ -387,6 +479,9 @@ ar_accept_time(PluginInstance* plugin, Time time)
 
     /* when could it be frozen? actively grabbed. we don't get any signal
      * about such events! */
+#if DEBUG_AUTOREPEAT & 4
+    ErrorF("%s: %s " TIME_FORMAT "\n", __FUNCTION__, plugin->device->name, time);
+#endif
     if (! plugin_frozen(plugin->next)) {
 	ar_push_events(plugin, time);
     }
@@ -402,7 +497,11 @@ ar_thaw(PluginInstance* plugin, Time now)
 
     /* todo: get rid of this */
     if (ar->event) {
-	ar_push_events(plugin, (ar->event->any.time));
+#if DEBUG_AUTOREPEAT & 2
+	ErrorF("%s we were keeping an event:!\n", __FUNCTION__);
+#endif
+	ar_push_events(plugin, /* CARD32 month,*/
+		       (ar->event->any.time));
 
 	if (!plugin_frozen(plugin->next)) {
 	    /* send it! */
@@ -411,6 +510,8 @@ ar_thaw(PluginInstance* plugin, Time now)
 						    FALSE);
 	    free (ar->event);
 	    ar->event = NULL;
+	} else {
+	    ErrorF("%s .... and we have to keep it some more!\n", __FUNCTION__);
 	}
     }
 
@@ -424,10 +525,15 @@ ar_thaw(PluginInstance* plugin, Time now)
 
     if (!plugin_frozen(plugin) && PluginClass(plugin->prev)->NotifyThaw) {
 	/* if !plugin->prev->NotifyThaw ... would be strange. */
-
+#if DEBUG_AUTOREPEAT & 2
+	ErrorF("%s -- sending thaw Notify upwards!\n", __FUNCTION__);
+#endif
 	/* thaw the previous! */
 	PluginClass(plugin->prev)->NotifyThaw(plugin->prev, now);
 	/* I could move now to the time of our event. */
+    } else {
+         ErrorF("%s -- NOT sending thaw Notify upwards %s!\n", __FUNCTION__,
+		plugin_frozen(plugin)?"next is frozen":"prev has not NotifyThaw");
     }
 }
 
