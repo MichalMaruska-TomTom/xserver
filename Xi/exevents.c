@@ -1675,6 +1675,29 @@ ProcessBarrierEvent(InternalEvent *e, DeviceIntPtr dev)
     free(ev);
 }
 
+static const char* event_names[] = {
+    "KeyPress",
+    "KeyRelease",
+    "ButtonPress",
+    "ButtonRelease",
+    "Motion",
+    "Enter",
+    "Leave",
+    "FocusIn",
+    "FocusOut",
+    "ProximityIn",
+    "ProximityOut",
+    "DeviceChanged",
+    "Hierarchy",
+    "DGAEvent",
+    "RawKeyPress",
+    "RawKeyRelease",
+    "RawButtonPress",
+    "RawButtonRelease",
+    "RawMotion",
+    "XQuartz"
+}; 
+
 /**
  * Process DeviceEvents and DeviceChangedEvents.
  */
@@ -1690,6 +1713,9 @@ ProcessDeviceEvent(InternalEvent *ev, DeviceIntPtr device)
     DeviceIntPtr mouse = NULL, kbd = NULL;
     DeviceEvent *event = &ev->device_event;
 
+#if 0
+    ErrorF("%s: %s %s\n", __FUNCTION__, device->name, event_names[ev->any.type - 2 ]);
+#endif
     if (IsPointerDevice(device)) {
         kbd = GetMaster(device, KEYBOARD_OR_FLOAT);
         mouse = device;
