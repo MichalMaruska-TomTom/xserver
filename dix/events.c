@@ -223,6 +223,12 @@ static void CheckPhysLimits(DeviceIntPtr pDev, CursorPtr cursor,
 /** Key repeat hack. Do not use but in TryClientEvents */
 extern BOOL EventIsKeyRepeat(xEvent *event);
 
+/* mmc: i should dismantle this tracing. But later. */
+#define debug_mmc 1
+#undef DEBUG
+#define DEBUG 1
+#include <color-debug.h>
+
 /**
  * Main input device struct.
  *     inputInfo.pointer

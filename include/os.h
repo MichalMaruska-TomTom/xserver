@@ -71,7 +71,12 @@ typedef struct _NewClientRec *NewClientPtr;
 #define xnfcalloc(_num, _size) XNFcalloc((unsigned long)(_num)*(unsigned long)(_size))
 #define xnfrealloc(ptr, size) XNFrealloc((pointer)(ptr), (unsigned long)(size))
 
+#if defined(__cplusplus) || defined(c_plusplus)
+/* stl conflict! */
+#else
 #define xalloc(size) Xalloc((unsigned long)(size))
+#endif
+
 #define xcalloc(_num, _size) Xcalloc((unsigned long)(_num)*(unsigned long)(_size))
 #define xrealloc(ptr, size) Xrealloc((pointer)(ptr), (unsigned long)(size))
 #define xfree(ptr) Xfree((pointer)(ptr))

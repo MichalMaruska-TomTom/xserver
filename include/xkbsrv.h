@@ -195,7 +195,11 @@ typedef struct _XkbSrvInfo {
 
 typedef struct _XkbSrvLedInfo {
     CARD16 flags;
-    CARD16 class;
+#ifdef __cplusplus
+        CARD16			cclass;
+#else
+	CARD16			class;
+#endif
     CARD16 id;
     union {
         KbdFeedbackPtr kf;
@@ -871,5 +875,15 @@ extern _X_EXPORT Bool XkbDDXNamesFromRules(DeviceIntPtr /* keybd */ ,
 extern _X_EXPORT XkbDescPtr XkbCompileKeymap(DeviceIntPtr /* dev */ ,
                                              XkbRMLVOSet *      /* rmlvo */
     );
+
+
+#if MMC_PIPELINE
+/* this is called from the module to register/provide! */
+void xkb_add_plugin_class(DevicePluginRec* plugin);
+
+/* When a plugin is ready to be removed from the pipeline, it does so by calling: */
+Bool xkb_remove_plugin(PluginInstance* plugin);
+#endif
+
 
 #endif                          /* _XKBSRV_H_ */
