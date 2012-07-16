@@ -1,6 +1,7 @@
 noinst_LTLIBRARIES = libxkb.la libxkbstubs.la
 
-AM_CFLAGS = $(DIX_CFLAGS)
+INCLUDES = $(XORG_INCS)
+AM_CFLAGS = $(DIX_CFLAGS) -DDEFAULT_MODULE_PATH=\"@DEFAULT_MODULE_PATH@\"
 
 DDX_SRCS = \
         ddxBeep.c \
@@ -8,6 +9,12 @@ DDX_SRCS = \
         ddxLEDs.c \
         ddxLoad.c \
         ddxList.c
+
+if MMC_PIPELINE
+PIPELINE_SRCS = freeze-queue.c pipeline.c plugin-AR.c core-plugin.c
+else
+PIPELINE_SRCS =
+endif
 
 DIX_SRCS = \
         xkb.c \
@@ -18,7 +25,7 @@ DIX_SRCS = \
         xkbLEDs.c \
         xkbInit.c \
         xkbActions.c \
-        xkbPrKeyEv.c
+        xkbPrKeyEv.c 	$(PIPELINE_SRCS)
 
 # this should be replaced by a common library or something, ideally -d
 XKBFILE_SRCS = \
