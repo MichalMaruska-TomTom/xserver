@@ -1054,26 +1054,57 @@ MonthChangedOrBadTime(InternalEvent *ev)
      * different sources in sorted order, then it's possible for time to go
      * backwards when it should not.  Here we ensure a decent time.
      */
-    if ((currentTime.milliseconds - ev->any.time) > TIMESLOP)
+    /* mmc: I want to solve it by reordering the events. But I think,
+     * that time going backwards in the events is OK if they come from a
+     * previously frozen device.
+     * Is replaying from different pipelines synced? */
+
+    if ((currentTime.milliseconds - ev->any.time) > TIMESLOP) {
         currentTime.months++;
-    else
-        ev->any.time = currentTime.milliseconds;
+        currentTime.milliseconds = ev->any.time;
+    } else {
+#if debug_mmc
+	ErrorF("%s%s%s\n\tevent time: %u\n\tcurrenttime (variable): %u (month %u)"
+	       "..... difference: %ld\n",
+	       color_green, __FUNCTION__, color_reset,
+	       ev->any.time,
+	       currentTime.milliseconds,
+	       currentTime.months,
+	       /* careful about difference of unsigned longs: */
+	       (currentTime.milliseconds > ev->any.time)?
+	       (long) (currentTime.milliseconds - ev->any.time):
+	       (- (long) (ev->any.time - currentTime.milliseconds)));
+#endif
+
+#if !MMC_PIPELINE
+        // ok, event time is BENEATH  currentTime, let's leave it.
+        // but then grab & allow_events has to allow this situation!
+	/* [03 giu 05] ... so this can be re-enabled */
+	ev->any.time = currentTime.milliseconds;
+#endif
+    };
 }
 
+
+/* This tries to push ahead currentTime.
+   But sometimes it could overwrite the event time! */
 static void
 NoticeTime(InternalEvent *ev)
 {
     if (ev->any.time < currentTime.milliseconds)
         MonthChangedOrBadTime(ev);
-    currentTime.milliseconds = ev->any.time;
+    else
+        // ok, going ahead!
+        currentTime.milliseconds = ev->any.time;
     lastDeviceEventTime = currentTime;
 }
 
 void
 NoticeEventTime(InternalEvent *ev)
 {
-    if (!syncEvents.playingEvents)
-        NoticeTime(ev);
+    // mmc: I should/do handle this
+    // if (!syncEvents.playingEvents)
+    NoticeTime(ev);
 }
 
 /**************************************************************************
@@ -1664,10 +1695,15 @@ ActivateKeyboardGrab(DeviceIntPtr keybd, GrabPtr grab, TimeStamp time,
     if (keybd->valuator)
         keybd->valuator->motionHintWindow = NullWindow;
     DoFocusEvents(keybd, oldWin, grab->window, NotifyGrab);
+#if MMC_PIPELINE
+    /* TimeStamp vs */
+    grabinfo->grabTime = time;
+#else
     if (syncEvents.playingEvents)
         grabinfo->grabTime = syncEvents.time;
     else
         grabinfo->grabTime = time;
+#endif  /* MMC_PIPELINE */
     CopyGrab(grabinfo->activeGrab, grab);
     grabinfo->grab = grabinfo->activeGrab;
     grabinfo->fromPassiveGrab = passive;
