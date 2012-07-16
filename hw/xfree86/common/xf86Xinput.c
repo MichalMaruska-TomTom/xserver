@@ -1250,7 +1250,9 @@ xf86PostKeyEventM(DeviceIntPtr device,
                   unsigned int key_code,
                   int is_down, int is_absolute, const ValuatorMask *mask)
 {
-    xf86PostKeyEventMTime(device, key_code, is_down, is_absolute, mask, 0);
+    ErrorF("%s: setting the time :)\n", __func__);
+    xf86PostKeyEventMTime(device, key_code, is_down, is_absolute, mask,
+                          GetTimeInMillis());
 }
 
 void
