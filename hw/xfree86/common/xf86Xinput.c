@@ -1350,7 +1350,7 @@ xf86PostKeyEventP(DeviceIntPtr device,
 void
 xf86PostKeyEventM(DeviceIntPtr device, unsigned int key_code, int is_down)
 {
-    xf86PostKeyEventMTime(device, key_code, is_down, 0);
+    xf86PostKeyEventMTime(device, key_code, is_down, GetTimeInMillis());
 }
 
 void
