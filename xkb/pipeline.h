@@ -16,4 +16,4 @@
 
 
 /* the top end: invoking pipeline  and bottom end: thawing.*/
-#define DEBUG_PIPELINE 1
+#define DEBUG_PIPELINE 0

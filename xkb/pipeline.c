@@ -298,8 +298,10 @@ static void
 start_plugin_pipeline(InternalEvent *event, DeviceIntPtr keybd)
 {
     PluginInstance* plugin = keybd->pipeline;
+#if DEBUG_PIPELINE
     ErrorF("%s: %s %s\n", __FUNCTION__, keybd->name,
            event_names[event->any.type - 2 ]);
+#endif
 #if 0
     if (keybd->last_upper_bound > event->u.keyButtonPointer.time)
 	ErrorF("%s: processing event coming from time %d before last push %d!\n",

@@ -32,9 +32,10 @@ core_process_key_event(PluginInstance* plugin,
     DeviceIntPtr keybd = plugin->device;
     // CHECKEVENT(event);
 
+#if DEBUG_PIPELINE
     ErrorF("%s: %s %d\n", __FUNCTION__, keybd->name,
 	   event->device_event.detail.key);
-
+#endif
     ProcessKeyboardEvent(event, keybd);
     if (owner)
 	free(event);
