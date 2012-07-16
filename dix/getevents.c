@@ -156,7 +156,7 @@ key_autorepeats(DeviceIntPtr pDev, int key_code)
                (1 << (key_code & 7)));
 }
 
-static void
+/*static*/ void
 init_event(DeviceIntPtr dev, DeviceEvent *event, Time ms)
 {
     memset(event, 0, sizeof(DeviceEvent));
@@ -1066,6 +1066,10 @@ GetKeyboardEventsTime(InternalEvent *events, DeviceIntPtr pDev, int type,
 
     /* Handle core repeating, via press/release/press/release. */
     if (type == KeyPress && key_is_down(pDev, key_code, KEY_POSTED)) {
+#if MMC_PIPELINE
+	/* mmc: in fact disabling hw key-repeat */
+	return 0;
+#endif
         /* If autorepeating is disabled either globally or just for that key,
          * or we have a modifier, don't generate a repeat event. */
         if (!pDev->kbdfeed->ctrl.autoRepeat ||

@@ -522,6 +522,7 @@ AccessXFilterPressEvent(DeviceEvent *event, DeviceIntPtr keybd)
         ignoreKeyEvent = TRUE;
     }
 
+#if !MMC_PIPELINE
     /* Start repeating if necessary.  Stop autorepeating if the user
      * presses a non-modifier key that doesn't autorepeat.
      */
@@ -544,6 +545,7 @@ AccessXFilterPressEvent(DeviceEvent *event, DeviceIntPtr keybd)
             }
         }
     }
+#endif
 
     /* Check for two keys being pressed at the same time.  This section
      * essentially says the following:
