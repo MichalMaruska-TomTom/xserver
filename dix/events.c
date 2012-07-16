@@ -1074,6 +1074,8 @@ NoticeEventTime(InternalEvent *ev)
  *            The following procedures deal with synchronous events       *
  **************************************************************************/
 
+/* mmc: with MMC_PIPELINE keyboard events don't use this. They are enqueued
+   in preceding plugins (the ../xkb/freeze-queue.c). */
 /**
  * EnqueueEvent is a device's processInputProc if a device is frozen.
  * Instead of delivering the events to the client, the event is tacked onto a
@@ -1176,10 +1178,13 @@ PlayReleasedEvents(void)
  restart:
     xorg_list_for_each_entry_safe(qe, tmp, &syncEvents.pending, next) {
         if (!qe->device->deviceGrab.sync.frozen) {
+            /* mmc: device of _this_ event,   otherwise just skip over  */
             xorg_list_del(&qe->next);
             pDev = qe->device;
             if (qe->event->any.type == ET_Motion)
                 CheckVirtualMotion(pDev, qe, NullWindow);
+            /* mmc: what time is kept here? Of the currently processed
+	       event i.e. the last one leaving this queue? */
             syncEvents.time.months = qe->months;
             syncEvents.time.milliseconds = qe->event->any.time;
 #ifdef PANORAMIX
@@ -1210,6 +1215,7 @@ PlayReleasedEvents(void)
 #endif
             (*qe->device->public.processInputProc) (qe->event, qe->device);
             free(qe);
+            /* mmc: still something not-frozen? */
             for (dev = inputInfo.devices; dev && dev->deviceGrab.sync.frozen;
                  dev = dev->next);
             if (!dev)
@@ -1316,9 +1322,10 @@ ComputeFreezes(void)
                 TouchListenerAcceptReject(replayDev, ti, 0, XIRejectTouch);
             }
             else if (replayDev->focus &&
-                     !IsPointerEvent((InternalEvent *) event))
-                DeliverFocusedEvent(replayDev, (InternalEvent *) event, w);
-            else
+                     !IsPointerEvent((InternalEvent *) event)) {
+                 ErrorF("Replaying\n"); /* mmc: */
+                 DeliverFocusedEvent(replayDev, (InternalEvent *) event, w);
+            } else
                 DeliverDeviceEvents(w, (InternalEvent *) event, NullGrab,
                                     NullWindow, replayDev);
         }
@@ -1403,6 +1410,11 @@ ScreenRestructured(ScreenPtr pScreen)
 }
 #endif
 
+/* mmc:
+ *   walks the SyncEvents queue, and `distributes' to the devices if not frozen.
+ *   i.e. calls the processInputProc
+ *   which is supposed to be the non enqueueing one (of course).
+ */
 static void
 CheckGrabForSyncs(DeviceIntPtr thisDev, Bool thisMode, Bool otherMode)
 {
@@ -1413,14 +1425,28 @@ CheckGrabForSyncs(DeviceIntPtr thisDev, Bool thisMode, Bool otherMode)
         thisDev->deviceGrab.sync.state = FROZEN_NO_EVENT;
     else {                      /* free both if same client owns both */
         thisDev->deviceGrab.sync.state = THAWED;
+        /* if the client explicitely grabbed a device which was previously
+         * grabbed as a side effect of grabbing another device, then remove
+         * that link. The client must manage this device explicitely from
+         * now. */
+
+	/* if frozen by a grab of a different client?
+	   when this (new) client ungrabs, the other one regains ? */
+
         if (thisDev->deviceGrab.sync.other &&
             (CLIENT_BITS(thisDev->deviceGrab.sync.other->resource) ==
              CLIENT_BITS(grab->resource)))
+            /* we had a grab (which forced Sync on this device.
+               This one (came later) does not. this releases it!! */
             thisDev->deviceGrab.sync.other = NullGrab;
     }
 
     if (IsMaster(thisDev)) {
         dev = GetPairedDevice(thisDev);
+        /* mmc:  if we have a grab on device A, and we have a passive grab on B, w/ async mode for "others", then
+         * we lose the sync grab on A? */
+	/* we force the grab on others.  if someone else was having a grab
+	   ... this overwrites it. */
         if (otherMode == GrabModeSync)
             dev->deviceGrab.sync.other = grab;
         else {                  /* free both if same client owns both */
@@ -1657,7 +1683,7 @@ DeactivateKeyboardGrab(DeviceIntPtr keybd)
         : keybd->spriteInfo->sprite->win;
     Bool wasImplicit = (keybd->deviceGrab.fromPassiveGrab &&
                         keybd->deviceGrab.implicitGrab);
-
+    ErrorF("%s, now deactivating the grab!\n", __FUNCTION__);
     if (focusWin == FollowKeyboardWin)
         focusWin = inputInfo.keyboard->focus->win;
     if (keybd->valuator)
@@ -1674,10 +1700,22 @@ DeactivateKeyboardGrab(DeviceIntPtr keybd)
 
     if (!wasImplicit && grab->grabtype == XI2)
         ReattachToOldMaster(keybd);
-
+#if 0
+    /* mmc: This DeactivateKeyboardGrab does not set  grab->frozen = FALSE !
+     * But it will be set in FreezeThaw unless: */
+    if (keybd->sync.other)
+       {
+          ErrorF("%s: this would be a bug!\n", __FUNCTION__);
+          /*
+          || (dev->sync.state >= FROZEN)
+          dev->sync.frozen = frozen; */
+       };
+#endif
     ComputeFreezes();
 }
 
+/* mmc:  freeze/thaw other devices depending on otherMode.  */
+/* mmc: I leave this buggy: inputInfo.devices when in another VT. */
 void
 AllowSome(ClientPtr client, TimeStamp time, DeviceIntPtr thisDev, int newState)
 {
@@ -1686,7 +1724,8 @@ AllowSome(ClientPtr client, TimeStamp time, DeviceIntPtr thisDev, int newState)
     DeviceIntPtr dev;
     GrabInfoPtr devgrabinfo, grabinfo = &thisDev->deviceGrab;
 
-    thisGrabbed = grabinfo->grab && SameClient(grabinfo->grab, client);
+    thisGrabbed = grabinfo->grab && SameClient(grabinfo->grab, client); /* grabbed &  by this client */
+    ErrorF("%s%s%s: %u\n", proc_color,__FUNCTION__,color_reset, time.milliseconds);
     thisSynced = FALSE;
     otherGrabbed = FALSE;
     othersFrozen = FALSE;
@@ -1697,8 +1736,24 @@ AllowSome(ClientPtr client, TimeStamp time, DeviceIntPtr thisDev, int newState)
         if (dev == thisDev)
             continue;
         if (devgrabinfo->grab && SameClient(devgrabinfo->grab, client)) {
+	    /* another device grabbed by this same client ->  */
+            /* fixme: this is strange: either not grabbed by _this_ client,
+             * or the grab predates ... why do we need the earlier
+             * grab?
+             *
+             * `thisGrabbed' is FALSE, if this device is grabbed _not_ b/c
+             * a grab in it, but b/c of a grab on another device, which
+             * had SyncMode for other devices....
+             *
+             *  Do we want to find that grab ?
+             */
+            /* mmc: seems the order matters !  take the 1st grabTime not
+             * later than */
+
             if (!(thisGrabbed || otherGrabbed) ||
                 (CompareTimeStamps(devgrabinfo->grabTime, grabTime) == LATER))
+		/* a > b   other device was grabbed _before_ this one */
+		/*  and we push back the ...  why ?? */
                 grabTime = devgrabinfo->grabTime;
             otherGrabbed = TRUE;
             if (grabinfo->sync.other == devgrabinfo->grab)
@@ -1707,11 +1762,38 @@ AllowSome(ClientPtr client, TimeStamp time, DeviceIntPtr thisDev, int newState)
                 othersFrozen = TRUE;
         }
     }
+    /* otherGrabbed not used anymore!! */
+    /* still Frozen? ... why ?  */
     if (!((thisGrabbed && grabinfo->sync.state >= FROZEN) || thisSynced))
+	/* `thisSynced' ... attached to another device grab, in SyncMode */
         return;
     if ((CompareTimeStamps(time, currentTime) == LATER) ||
-        (CompareTimeStamps(time, grabTime) == EARLIER))
+        (CompareTimeStamps(time, grabTime) == EARLIER)) {
+        ErrorF("%s returning b/c times are not right:\n"
+               "grab:\t%u\t%u\n"
+               "cur:\t%u\t%u\n"
+               "time:\t%u\t%u\n", __FUNCTION__,
+               grabTime.months,
+               grabTime.milliseconds,
+
+               currentTime.months,
+               currentTime.milliseconds,
+               time.months,
+               time.milliseconds);
         return;
+    }
+    /* below: still used:  thisGrabbed, othersFrozen
+     *  not:  grabTime
+     *
+     *  mmc: should be  (receive (thisGrabbed  thisSynced ) ....
+     *                       .....
+     */
+    /* sounds like a finite-state-machine */
+
+#if debug_mmc
+    ErrorF("%s FSM on sync.state & sync.other\n", __FUNCTION__);
+#endif
+
     switch (newState) {
     case THAWED:               /* Async */
         if (thisGrabbed)
@@ -1760,6 +1842,7 @@ AllowSome(ClientPtr client, TimeStamp time, DeviceIntPtr thisDev, int newState)
                 grabinfo->sync.other = NullGrab;
             syncEvents.replayDev = thisDev;
             syncEvents.replayWin = grabinfo->grab->window;
+            ErrorF("%s, now deactivating the grab (Replay)!\n", __FUNCTION__);
             (*grabinfo->DeactivateGrab) (thisDev);
             syncEvents.replayDev = (DeviceIntPtr) NULL;
         }
@@ -2894,6 +2977,7 @@ ActivateFocusInGrab(DeviceIntPtr dev, WindowPtr old, WindowPtr win)
             IsParent(dev->deviceGrab.grab->window, win))
             return FALSE;
         DoEnterLeaveEvents(dev, dev->id, old, win, XINotifyPassiveUngrab);
+        ErrorF("%s, now deactivating the grab!\n", __FUNCTION__);
         (*dev->deviceGrab.DeactivateGrab) (dev);
     }
 
@@ -2934,6 +3018,7 @@ ActivateEnterGrab(DeviceIntPtr dev, WindowPtr old, WindowPtr win)
             IsParent(dev->deviceGrab.grab->window, win))
             return FALSE;
         DoEnterLeaveEvents(dev, dev->id, old, win, XINotifyPassiveUngrab);
+        ErrorF("%s, now deactivating the grab!\n", __FUNCTION__);
         (*dev->deviceGrab.DeactivateGrab) (dev);
     }
 
@@ -3690,7 +3775,6 @@ ActivatePassiveGrab(DeviceIntPtr device, GrabPtr grab, InternalEvent *event,
 
     if (xE) {
         FixUpEventFromWindow(pSprite, xE, grab->window, None, TRUE);
-
         /* XXX: XACE? */
         TryClientEvents(rClient(grab), device, xE, count,
                         GetEventFilter(device, xE),
@@ -4328,10 +4412,22 @@ RecalculateDeliverableEvents(WindowPtr pWin)
     OtherClients *others;
     WindowPtr pChild;
 
+    /*        Root
+     *
+     *      parent         ->  deliverableEvents
+     *      /
+     *    win -> owner      ->  DontPropagateMask,
+     *    /  \->  others
+     *   /    \
+     *  child->sibling ....
+     *
+     *  it traverses the entire subtree ! */
+
     pChild = pWin;
     while (1) {
         if (pChild->optional) {
             pChild->optional->otherEventMasks = 0;
+            /*  sum of others. sort-of a `cache' */
             for (others = wOtherClients(pChild); others; others = others->next) {
                 pChild->optional->otherEventMasks |= others->mask;
             }
@@ -4657,6 +4753,7 @@ DeviceEnterLeaveEvent(DeviceIntPtr mouse,
     free(event);
 }
 
+/* this is during _asynchro_ grab. */
 void
 CoreFocusEvent(DeviceIntPtr dev, int type, int mode, int detail, WindowPtr pWin)
 {
@@ -4895,6 +4992,18 @@ ProcGrabPointer(ClientPtr client)
     if (oldCursor && rep.status == GrabSuccess)
         FreeCursor(oldCursor, (Cursor) 0);
 
+#if debug_mmc
+#if 0
+    {
+        TimeStamp time = ClientTimeToServerTime(stuff->time);
+        ErrorF("%s times cur:\t%u\t%u\ntime:\t%u\t%u\n", __FUNCTION__,
+               currentTime.months,
+               currentTime.milliseconds,
+               time.months,
+               time.milliseconds);
+    }
+#endif
+#endif
     rep.type = X_Reply;
     rep.sequenceNumber = client->sequence;
     rep.length = 0;
@@ -4976,6 +5085,9 @@ ProcUngrabPointer(ClientPtr client)
     grab = device->deviceGrab.grab;
 
     time = ClientTimeToServerTime(stuff->id);
+#if debug_mmc
+    ErrorF ("%s: grab time:\t %u\n", __FUNCTION__, time.milliseconds);
+#endif
     if ((CompareTimeStamps(time, currentTime) != LATER) &&
         (CompareTimeStamps(time, device->deviceGrab.grabTime) != EARLIER) &&
         (grab) && SameClient(grab, client))
@@ -5102,6 +5214,24 @@ GrabDevice(ClientPtr client, DeviceIntPtr dev,
 
         FreeGrab(tempGrab);
     }
+    /* mmc */
+    if (*status != GrabSuccess){
+
+       char* reason = "unknown";
+       switch (*status) {
+       case GrabNotViewable:
+          reason = "GrabNotViewable";
+          break;
+       case GrabFrozen:
+          reason = "GrabFrozen";
+          break;
+       case GrabInvalidTime:
+          reason = "GrabInvalidTime";
+          break;
+       }
+       ErrorF ("%s failing: b/c %s\n", __FUNCTION__, reason);
+    }
+
     return Success;
 }
 
@@ -5122,6 +5252,7 @@ ProcGrabKeyboard(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xGrabKeyboardReq);
 
+    ErrorF("%s%s%s: %u\n", proc_color,__FUNCTION__,color_reset, stuff->time);
     memset(&rep, 0, sizeof(xGrabKeyboardReply));
     mask.core = KeyPressMask | KeyReleaseMask;
 
@@ -5130,8 +5261,35 @@ ProcGrabKeyboard(ClientPtr client)
                         stuff->ownerEvents, stuff->time, &mask, CORE, None,
                         None, &rep.status);
 
-    if (result != Success)
-        return result;
+    if (result != Success) {
+        /* mmc: that means just bad arguments.
+         * the time check result is in rep.status! */
+        if (rep.status != GrabSuccess){
+
+            char* reason = "unknown";
+
+            switch (rep.status) {
+                case GrabNotViewable:
+                    reason = "GrabNotViewable";
+                    break;
+
+                    /* With this code I found the bug in "Sawfish menu".
+                       It was "passing" its grab to another client,
+                       w/o necessary XSync. */
+                case AlreadyGrabbed:
+                    reason = "AlreadyGrabbed";
+                    break;
+                case GrabFrozen:
+                    reason = "GrabFrozen";
+                    break;
+                case GrabInvalidTime:
+                    reason = "GrabInvalidTime";
+                    break;
+            }
+            ErrorF ("%s failing: b/c %s\n", __FUNCTION__, reason);
+        }
+    	return result;
+    }
     rep.type = X_Reply;
     rep.sequenceNumber = client->sequence;
     rep.length = 0;
@@ -5159,10 +5317,27 @@ ProcUngrabKeyboard(ClientPtr client)
     grab = device->deviceGrab.grab;
 
     time = ClientTimeToServerTime(stuff->id);
+    ErrorF("%s%s%s: %u\n", proc_color,__FUNCTION__,color_reset,
+           time.milliseconds);
     if ((CompareTimeStamps(time, currentTime) != LATER) &&
         (CompareTimeStamps(time, device->deviceGrab.grabTime) != EARLIER) &&
         (grab) && SameClient(grab, client) && grab->grabtype == CORE)
         (*device->deviceGrab.DeactivateGrab) (device);
+    else {
+        ErrorF("FAILED:\n");
+        if (CompareTimeStamps(time, currentTime) == LATER)
+            ErrorF("time in future!\n");
+        else if (CompareTimeStamps(time, device->deviceGrab.grabTime)
+                 == EARLIER)
+            ErrorF("time earlier than the Grab!\n");
+        else if (! grab)
+            ErrorF("not grabbed at all!\n");
+        else if (!SameClient(grab, client))
+            ErrorF("not grabbed or this client! %x %x\n",
+                   CLIENT_BITS(grab->resource), (client)->clientAsMask);
+        else
+            ErrorF("not a core grab %d!\n", grab->grabtype);
+    }
     return Success;
 }
 
