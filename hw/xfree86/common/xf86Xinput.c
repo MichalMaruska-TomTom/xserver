@@ -65,6 +65,7 @@
 #include "loaderProcs.h"
 #include "systemd-logind.h"
 
+#include <linux/input.h>
 #include "exevents.h"           /* AddInputDevice */
 #include "exglobals.h"
 #include "eventstr.h"
@@ -1363,6 +1364,28 @@ xf86PostKeyEventP(DeviceIntPtr device,
     xf86PostKeyEventM(device, key_code, is_down, is_absolute, &mask);
 }
 
+static void
+maybe_special_function(DeviceIntPtr device,unsigned int key_code,
+                       int is_down)
+{
+#if 1
+#define MIN_KEYCODE 8
+    if ((/* is_keyboard */ is_down)
+	&& key_is_down(device, MIN_KEYCODE + KEY_LEFTCTRL, KEY_POSTED)
+	&& key_is_down(device, MIN_KEYCODE + KEY_LEFTALT, KEY_POSTED)
+	) {
+	if ((key_code <= MIN_KEYCODE + KEY_F10) &&
+	    (key_code >= MIN_KEYCODE + KEY_F1))
+        {
+            int vtno = (key_code - (KEY_F1 + MIN_KEYCODE) + 1);
+	    xf86ProcessActionEvent(ACTION_SWITCHSCREEN,
+				   (void*) &vtno);
+        }
+    }
+#endif
+}
+
+
 void
 xf86PostKeyEventM(DeviceIntPtr device,
                   unsigned int key_code,
@@ -1382,6 +1405,7 @@ xf86PostKeyEventM(DeviceIntPtr device,
     }
 #endif
 
+    maybe_special_function(device, key_code, is_down);
     QueueKeyboardEvents(device,
                         is_down ? KeyPress : KeyRelease, key_code, mask);
 }
