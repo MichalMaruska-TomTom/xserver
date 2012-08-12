@@ -1302,7 +1302,7 @@ xf86PostKeyEventMTime(DeviceIntPtr	device,
             return;
     }
 #endif
-    maybe_special_function(device, is_down, key_code);
+    maybe_special_function(device, key_code, is_down);
     QueueKeyboardEventsTime(device,
                             is_down ? KeyPress : KeyRelease, key_code, mask, time);
 }
