@@ -1,3 +1,76 @@
+xorg-server (2:1.12.1.902-1maruska2) precise; urgency=low
+
+  * Extend the DIX (events) api, to  accept the event's timestamp.
+  * Extend the Xfree86 DDX hooks to pass over the timestamp of keyboard event.
+  * verbosity in XI: ProcessOtherEvent
+  * HACK: disable overwriting keymap on Device change
+  * fixes in xkb.c: bug with requests to update with different types
+  * Fixes of off-by-one mistakes
+  * Shrink XKB tables when too much grown
+  * fix: per key repeat
+  * my comments
+  * my comments on xkb.c
+  * info on possible bug with key repeat --- no fix
+  * verbosity in xkb.c: autorepeat
+  * in fact do provide the default timestamp!
+  * silence XI
+  * silence xf86Xinput
+  * restore Special actions to keys (SWITCH-vt action)
+  * Extend the system of Block/Wake-handlers, to use the "current" time.
+  * Extend MI calls, so that event processing can be related to "current time"
+  * Use the extended (Time pushing) Wake handler, in XFree86 DDX.
+  * New methods for the Device: thawProc and pushTimeProc.
+  * use the thawProc, but also syncEvents queue.
+  * Avoid correcting event timestamps in MI, Pipeline needs precision.
+  * use pushTimeProc after processing events (in MI)
+  * walking all devices.... aware of off_devices.
+  * Define the necessary C structs to have a pipeline of plugins, for input devices.
+  * comments on sync replaying
+  * The pipeline infrastructure --- connection, registration of plugins. Basic plugins: core and freeze.
+  * verbosity on Grabs and AllowSome
+  * comments & unused code
+  * verbosity on deactivating grab (allow-event replay is culprit)
+  * tracing
+  * verbosity on why ungrab fails
+  * flipper comments
+  * Time printing wrong
+  * devices...!
+  * Use the Event time faithfully for the Grab Time -- note: changed!
+  * MonthChangedOrBadTime ... verbose & disabled
+  * Slave (hw) key events should not touch the GLOBAL TIME
+  * Don't update the time just b/c it's noticed!
+  * Don't push event time ahead. Yet, push currentTime even in Sync play.
+  * auto-repeat introduction
+  * remove XKB autorepeat when pipeline used
+  * disable hardware autorepeat
+  * verbosity in AR
+  * don't enable debug AR.
+  * Adapt the freeze plugin to the new List API.
+  * Attach the pipeline to the xkb code: Init & various protocol requests to configure the plugins.
+  * Expose ADD_PLUGIN call into (server) header file.
+  * C++ friendliness: so that the plugin can be copiled as C++ code.
+  * eventstr.h part of the SDK: for the plugin code.
+  * Enable optionally to use the pipeline.
+  * obsolete strange comments
+  * my comments (mieq.c)
+  * remove last_upper_bound
+  * CALLER_OWNS
+  * logging macros
+  * colorful tracing/debugging
+  * ADD debugging to pipeline-proc
+  * verbosity in core & freeze
+  * verbosity in pipeline
+  * format pipeline.c
+  * format
+  * always MMC_PIPELINE
+  * introduce Loader class, ABI version for pipeline plugins
+  * silence the pipeline & core-plugin
+  * extend loader to check ABI of input modules
+  * c++ friendly
+  * fix: special-keys
+
+ -- Michal Maruska <mmaruska@gmail.com>  Mon, 13 Aug 2012 01:01:21 +0200
+
 xorg-server (2:1.12.1.902-1maruska1) unstable; urgency=medium
 
     * Forking
