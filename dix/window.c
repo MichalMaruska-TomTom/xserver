@@ -221,7 +221,8 @@ log_window_info(WindowPtr pWin, int depth)
     int i;
     const char *win_name, *visibility;
     BoxPtr rects;
-    ScreenPtr pScreen = pWin->drawable.pScreen;
+    /* mmc: how to say it is used? */
+    ScreenPtr pScreen __attribute__ ((unused)) = pWin->drawable.pScreen;
 
     for (i = 0; i < (depth << 2); i++)
         ErrorF(" ");
