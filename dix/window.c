@@ -132,6 +132,7 @@ Equipment Corporation.
 #include "xace.h"
 #include "exevents.h"
 
+#include "selection.h"
 #include <X11/Xatom.h>          /* must come after server includes */
 
 /******
