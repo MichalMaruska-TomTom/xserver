@@ -73,7 +73,8 @@ ar_synthesize_event(PluginInstance* plugin,
 #if 1
     /* todo: use the init_event from ../dix/getevents.c
        init_event(keybd, &event, time) */
-    init_event(keybd, &event, time);
+    /* how to init a DeviceEvent? For now I init the union-sibling. */
+    init_raw(keybd, (RawDeviceEvent*) &event, time, type, keyCode);
 #else
     memset(&event, 0, sizeof(DeviceEvent));
     event.header = ET_Internal;
