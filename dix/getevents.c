@@ -1100,7 +1100,7 @@ GetKeyboardEvents(InternalEvent *events, DeviceIntPtr pDev, int type,
                   int key_code)
 {
     return GetKeyboardEventsTime(events, pDev, type, key_code,
-                                 0);
+                                 GetTimeInMillis());
 }
 
 int
