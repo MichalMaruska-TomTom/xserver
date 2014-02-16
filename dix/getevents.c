@@ -156,6 +156,8 @@ key_is_down(DeviceIntPtr pDev, int key_code, int type)
     return ret;
 }
 
+/* mmc: I see 2 states! POSTED & PROCESSED */
+
 static Bool
 key_autorepeats(DeviceIntPtr pDev, int key_code)
 {
@@ -1030,6 +1032,7 @@ updateHistory(DeviceIntPtr dev, ValuatorMask *mask, CARD32 ms)
     }
 }
 
+/* mmc: still via `mi' */
 static void
 queueEventList(DeviceIntPtr device, InternalEvent *events, int nevents)
 {
