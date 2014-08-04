@@ -280,6 +280,7 @@ AddInputDevice(ClientPtr client, DeviceProc deviceProc, Bool autoStart)
 
     dev->public.thawProc = NULL; /* NoopDDA */
     dev->public.pushTimeProc = NULL;
+    dev->pipeline = NULL;
     dev->deviceProc = deviceProc;
     dev->startup = autoStart;
 
