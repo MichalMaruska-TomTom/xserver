@@ -49,7 +49,7 @@ SOFTWARE.
 
 #include <X11/extensions/XI2proto.h>
 
-#include "xorg-server.h"
+// #include "xorg-server.h"
 #include <pixman.h>
 #include "input.h"
 #include "window.h"
