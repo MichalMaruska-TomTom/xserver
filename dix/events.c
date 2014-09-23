@@ -1338,9 +1338,15 @@ ComputeFreezes(void)
 #endif
         )
       {
-	  return;
+#if DEBUG_MMC || 1
+          ErrorF("%s%s%s: detected recursive call-> return.\n", event_color,
+                 __FUNCTION__, color_reset);
+#endif
+          return;
       }
 
+    ErrorF("%s%s%s: now scanning and releasing events!\n",
+           event_color, __FUNCTION__, color_reset);
     syncEvents.playingEvents = TRUE;
     /* mmc: this is only for replaying the 1 event which caused Grab */
     if (replayDev) {
@@ -1369,7 +1375,10 @@ ComputeFreezes(void)
     /* mmc: find the first/_any_ device not frozen ...
      * fixme: This should run only on devs which were frozen up to now!   */
     for (dev = devices; dev; dev = dev->next) {
-            if (!dev->deviceGrab.sync.frozen) {
+#if (DEBUG_MMC && 0)
+        ErrorF("\t%s\n", dev->name);
+#endif
+        if (!dev->deviceGrab.sync.frozen) {
 #if MMC_PIPELINE
             if (dev->public.thawProc) {
                 dev->public.thawProc(dev);
