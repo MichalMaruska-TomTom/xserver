@@ -1382,7 +1382,9 @@ ComputeFreezes(void)
     /* mmc: find the first/_any_ device not frozen ...
      * fixme: This should run only on devs which were frozen up to now!   */
     for (dev = devices; dev; dev = dev->next) {
+#if (DEBUG_MMC && 0)
         ErrorF("\t%s\n", dev->name);
+#endif
         if (!dev->deviceGrab.sync.frozen) {
 #if MMC_PIPELINE
             if (dev->public.thawProc) {
