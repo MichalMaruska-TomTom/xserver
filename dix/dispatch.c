@@ -176,7 +176,12 @@ volatile char isItTimeToYield;
 #define SAME_SCREENS(a, b) (\
     (a.pScreen == b.pScreen))
 
-/* mmc: what is this HWEventQueue ? */
+/* mmc: what is this HWEventQueue ?
+ *
+ * Note, that they are pointers. So the owner of the pointers
+ * can change the values beneath, and UpdateCurrentTime checks for THOSE!
+ * see ../mi/mieq.c
+ * */
 void
 SetInputCheck(HWEventQueuePtr c0, HWEventQueuePtr c1)
 {
