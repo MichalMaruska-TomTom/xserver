@@ -4773,7 +4773,8 @@ SetInputFocus(ClientPtr client,
     TimeStamp time;
     DeviceIntPtr keybd;         /* used for FollowKeyboard or FollowKeyboardWin */
 
-    UpdateCurrentTime();
+    /* mmc: should it pass time to it? so only events before that @time are processed! */
+    UpdateCurrentTime();        /* mmc: i.e. processEvents first. */
     if ((revertTo != RevertToParent) &&
         (revertTo != RevertToPointerRoot) &&
         (revertTo != RevertToNone) &&
@@ -4919,7 +4920,7 @@ ProcGrabPointer(ClientPtr client)
     int rc;
 
     REQUEST_SIZE_MATCH(xGrabPointerReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime();        /* mmc: events are processed (in rush) */
 
     if (stuff->eventMask & ~PointerGrabMask) {
         client->errorValue = stuff->eventMask;
@@ -5026,6 +5027,8 @@ ProcUngrabPointer(ClientPtr client)
     REQUEST(xResourceReq);
 
     REQUEST_SIZE_MATCH(xResourceReq);
+    /* mmc: could this ... processing events ... result in another Grab?
+     * then what? */
     UpdateCurrentTime();
     grab = device->deviceGrab.grab;
 
@@ -5069,6 +5072,7 @@ GrabDevice(ClientPtr client, DeviceIntPtr dev,
     GrabInfoPtr grabInfo = &dev->deviceGrab;
     CursorPtr cursor;
 
+    /* mmc: but processing events could grab as well? */
     UpdateCurrentTime();
     if ((keyboard_mode != GrabModeSync) && (keyboard_mode != GrabModeAsync)) {
         client->errorValue = keyboard_mode;
@@ -5214,6 +5218,7 @@ ProcUngrabKeyboard(ClientPtr client)
     REQUEST(xResourceReq);
 
     REQUEST_SIZE_MATCH(xResourceReq);
+    /* mmc: but processing events could passive-grab, so this way it won't. */
     UpdateCurrentTime();
 
     grab = device->deviceGrab.grab;
