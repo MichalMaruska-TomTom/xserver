@@ -150,11 +150,14 @@ ProcSetSelectionOwner(ClientPtr client)
     REQUEST(xSetSelectionOwnerReq);
     REQUEST_SIZE_MATCH(xSetSelectionOwnerReq);
 
-    UpdateCurrentTime();
+    UpdateCurrentTime();        /* mmc: note, that currentTime is modified only
+                                 * by that function, not by event processing itself.
+                                 * is it? */
     time = ClientTimeToServerTime(stuff->time);
 
     /* If the client's time stamp is in the future relative to the server's
-       time stamp, do not set the selection, just return success. */
+       time stamp, do not set the selection, just return success.
+       mmc: why? silently lie? */
     if (CompareTimeStamps(time, currentTime) == LATER)
         return Success;
 

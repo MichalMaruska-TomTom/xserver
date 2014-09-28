@@ -189,8 +189,10 @@ SetInputCheck(HWEventQueuePtr c0, HWEventQueuePtr c1)
     checkForInput[1] = c1;
 }
 
-/* updates the notion of time, independent of events!!!
- * Just from the clock! */
+/* mmc: updates the notion of time, independent of events!!!
+ * Just from the clock!
+ * But also calls ProcessEvents(), and the time is from BEFORE
+ * the processing */
 void
 UpdateCurrentTime(void)
 {

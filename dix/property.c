@@ -454,7 +454,8 @@ ProcGetProperty(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xGetPropertyReq);
     if (stuff->delete) {
-        UpdateCurrentTime();
+        UpdateCurrentTime();    /* mmc: why is this needed? Aren`t events processed between
+                                 * client requests? */
         win_mode |= DixSetPropAccess;
         prop_mode |= DixDestroyAccess;
     }
