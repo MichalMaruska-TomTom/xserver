@@ -226,21 +226,25 @@ UpdateCurrentTime(void)
 }
 
 /* Like UpdateCurrentTime, but can't call ProcessInputEvents */
+/* mmc: update currentTime, handling wrap-over.  */
 void
 UpdateCurrentTimeIf(void)
 {
-#if mmc_debug
     TimeStamp systime;
     systime.months = currentTime.months;
     systime.milliseconds = GetTimeInMillis();
     if (systime.milliseconds < currentTime.milliseconds)
         systime.months++;
     if (CompareTimeStamps(systime, currentTime) == LATER) {
+#if mmc_debug
         ErrorF("%s: %u->%u\n", __FUNCTION__, currentTime.milliseconds,
                systime.milliseconds);
-	// currentTime = systime;
-    }
 #endif
+        /* I wanted to keep the time of last event processed.
+         * Because events can come from `past' which is bad.
+         * So basically this is per-device. Should be  InputDeviceTime..... */
+	currentTime = systime;
+    }
 }
 
 #undef SMART_DEBUG
