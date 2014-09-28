@@ -386,7 +386,7 @@ AllocateMotionHistory(DeviceIntPtr pDev)
     int size;
 
     free(pDev->valuator->motion);
-
+    /* mmc: I free() and then return? */
     if (pDev->valuator->numMotionEvents < 1)
         return;
 
@@ -1070,7 +1070,7 @@ QueueKeyboardEvents(DeviceIntPtr device, int type,
                     int keycode, const ValuatorMask *mask)
 {
     int nevents;
-
+    /* mmc: InputEventList is the pool */
     nevents = GetKeyboardEvents(InputEventList, device, type, keycode, mask);
     queueEventList(device, InputEventList, nevents);
 }
@@ -1103,6 +1103,7 @@ GetKeyboardEvents(InternalEvent *events, DeviceIntPtr pDev, int type,
                                  mask_in, GetTimeInMillis());
 }
 
+/* this could be static. */
 int
 GetKeyboardEventsTime(InternalEvent *events, DeviceIntPtr pDev, int type,
                   int key_code, const ValuatorMask *mask_in, Time time)
