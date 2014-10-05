@@ -188,6 +188,9 @@ ProcessInputEventsPush (Time now)
     else
         mieqProcessInputEvents();
 
+    /* mmc: so processing input events does not lead to drawing
+     * i.e. processing Client requests?*/
+
     /* FIXME: This is a problem if we have multiple pointers */
     miPointerGetPosition(inputInfo.pointer, &x, &y);
 
@@ -201,6 +204,7 @@ ProcessInputEventsPush (Time now)
 void
 xf86ProcessActionEvent(ActionEvent action, void *arg)
 {
+    /* mmc:  */
     DebugF("ProcessActionEvent(%d,%x)\n", (int) action, arg);
     switch (action) {
     case ACTION_TERMINATE:
