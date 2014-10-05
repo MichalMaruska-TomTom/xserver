@@ -94,6 +94,14 @@ EventQueuePtr *queues;
 DeviceIntPtr *devices;
 
 int mi_devices;
+#if 0
+    /* hash table */
+    struct device_queue
+    {
+        device;
+        queue;
+    };
+#endif
 
 static Bool mieqInit_device(EventQueuePtr eq);
 
@@ -217,6 +225,11 @@ mieqGrowQueue(EventQueuePtr eventQueue, size_t new_nevents)
 Bool
 mieqInit(void)
 {
+    /* useless? */
+    mi_devices = 0;
+    devices = NULL;
+    queues = NULL;
+
     return mieqInit_device(&miEventQueue);
 }
 
