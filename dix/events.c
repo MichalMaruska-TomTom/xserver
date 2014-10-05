@@ -1092,7 +1092,13 @@ MonthChangedOrBadTime(CARD32 *ms)
 void
 NoticeTime(const DeviceIntPtr dev, TimeStamp time)
 {
+    // new in 2015-10-28
     currentTime = time;
+    /* mmc: last of this device, and of all devices.
+     * but that's not true for now:
+     *
+     * ProcessEvents does not pick the first in time....
+     * */
     lastDeviceEventTime[XIAllDevices].time = currentTime;
     lastDeviceEventTime[dev->id].time = currentTime;
 
