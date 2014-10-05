@@ -37,6 +37,8 @@ typedef struct _RawDeviceEvent RawDeviceEvent;
 #ifdef XQUARTZ
 typedef struct _XQuartzEvent XQuartzEvent;
 #endif
+/* mmc: this is union of those above?
+ * But these defs must come before the definition */
 typedef union _InternalEvent InternalEvent;
 
 #endif

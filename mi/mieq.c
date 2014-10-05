@@ -678,6 +678,7 @@ void miManageQueue(EventQueuePtr eq)
     size_t n_enqueued;
 
     /* Grow our queue if we are reaching capacity: < 2 * QUEUE_RESERVED_SIZE remaining */
+    /* mmc: prevention of future dropping? */
     n_enqueued = mieqNumEnqueued(eq);
     if (n_enqueued >= (eq->nevents - (2 * QUEUE_RESERVED_SIZE)) &&
         eq->nevents < QUEUE_MAXIMUM_SIZE) {
