@@ -225,6 +225,11 @@ mieqGrowQueue(EventQueuePtr eventQueue, size_t new_nevents)
 Bool
 mieqInit(void)
 {
+    /* useless? */
+    mi_devices = 0;
+    devices = NULL;
+    queues = NULL;
+
     return mieqInit_device(&miEventQueue);
 }
 
