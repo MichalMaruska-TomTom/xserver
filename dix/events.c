@@ -1571,6 +1571,7 @@ ActivatePointerGrab(DeviceIntPtr mouse, GrabPtr grab,
                 mouse->spriteInfo->sprite->hotPhys.y = 0;
         ConfineCursorToWindow(mouse, grab->confineTo, FALSE, TRUE);
     }
+    /* mmc: this has time */
     DoEnterLeaveEvents(mouse, mouse->id, oldWin, grab->window, NotifyGrab);
     mouse->valuator->motionHintWindow = NullWindow;
     if (syncEvents.playingEvents)
@@ -1637,6 +1638,7 @@ DeactivatePointerGrab(DeviceIntPtr mouse)
         if (dev->deviceGrab.sync.other == grab)
             dev->deviceGrab.sync.other = NullGrab;
     }
+    /* mmc: this (ungrab) *must* have some time too.  */
     DoEnterLeaveEvents(mouse, mouse->id, grab->window,
                        mouse->spriteInfo->sprite->win, NotifyUngrab);
     if (grab->confineTo)
@@ -1770,8 +1772,26 @@ AllowSome(ClientPtr client, TimeStamp time, DeviceIntPtr thisDev, int newState)
     }
     if (!((thisGrabbed && grabinfo->sync.state >= FROZEN) || thisSynced))
         return;
+
+    /* mmc: This function is bound w/ a device. so currentTime of that device. */
     if ((CompareTimeStamps(time, currentTime) == LATER) ||
-        (CompareTimeStamps(time, grabTime) == EARLIER))
+        (CompareTimeStamps(time, grabTime) == EARLIER)) {
+        /* mmc: is there any danger in ignoring this? */
+        if (CompareTimeStamps(time, currentTime) == LATER)
+            ErrorF("AllowSome requested with time in FUTURE!");
+#if DEBUG_MMC
+        ErrorF("%s returning b/c times are not right:\n"
+               "grab:\t%u\t%u\n"
+               "cur:\t%u\t%u\n"
+               "time:\t%u\t%u\n", __FUNCTION__,
+               grabTime.months,
+               grabTime.milliseconds,
+
+               currentTime.months,
+               currentTime.milliseconds,
+               time.months,
+               time.milliseconds);
+#endif
         return;
     switch (newState) {
     case THAWED:               /* Async */
@@ -2107,6 +2127,8 @@ ActivateImplicitGrab(DeviceIntPtr dev, ClientPtr client, WindowPtr win,
         xi2mask_merge(tempGrab->xi2mask, inputMasks->xi2mask);
 
     (*dev->deviceGrab.ActivateGrab) (dev, tempGrab,
+                                     /* mmc: why not use event->time
+                                      * the event is always a device event, isn't it? */
                                      currentTime, TRUE | ImplicitGrabMask);
     FreeGrab(tempGrab);
     return TRUE;
@@ -4590,6 +4612,7 @@ CoreEnterLeaveEvent(DeviceIntPtr mouse,
     }
 
     event.u.enterLeave.time = currentTime.milliseconds;
+    /* mmc: is this relevant?  */
     event.u.enterLeave.rootX = mouse->spriteInfo->sprite->hot.x;
     event.u.enterLeave.rootY = mouse->spriteInfo->sprite->hot.y;
     /* Counts on the same initial structure of crossing & button events! */
@@ -4810,6 +4833,7 @@ SetInputFocus(ClientPtr client,
         return Success;
     mode = (dev->deviceGrab.grab) ? NotifyWhileGrabbed : NotifyNormal;
     if (focus->win == FollowKeyboardWin) {
+        /* mmc: provide some timestamp too!  */
         if (!ActivateFocusInGrab(dev, keybd->focus->win, focusWin))
             DoFocusEvents(dev, keybd->focus->win, focusWin, mode);
     }
@@ -5727,6 +5751,7 @@ ProcUngrabButton(ClientPtr client)
  * @param freeResources True if resources associated with the window should be
  * deleted.
  */
+/* mmc: could this have a time? */
 void
 DeleteWindowFromAnyEvents(WindowPtr pWin, Bool freeResources)
 {
