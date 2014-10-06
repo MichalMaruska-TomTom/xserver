@@ -759,38 +759,51 @@ int find_first_non_empty(EventRec **ret_event)
 #endif // USE_SEPARATE_QUEUES
 
 
+static
+void miManageQueue(EventQueuePtr eq)
+{
+    size_t n_enqueued;
+
+    /* Grow our queue if we are reaching capacity: < 2 * QUEUE_RESERVED_SIZE remaining */
+    n_enqueued = mieqNumEnqueued(eq);
+    if (n_enqueued >= (eq->nevents - (2 * QUEUE_RESERVED_SIZE)) &&
+        eq->nevents < QUEUE_MAXIMUM_SIZE) {
+        ErrorF("[mi] Increasing EQ size to %lu to prevent dropped events.\n",
+               (unsigned long) (eq->nevents << 1));
+        if (!mieqGrowQueue(eq, eq->nevents << 1)) {
+            ErrorF("[mi] Increasing the size of EQ failed.\n");
+        }
+    }
+
+    /* report dropped */
+    if (eq->dropped) {
+        ErrorF("[mi] EQ processing has resumed after %lu dropped events.\n",
+               (unsigned long) eq->dropped);
+        ErrorF
+            ("[mi] This may be caused my a misbehaving driver monopolizing the server's resources.\n");
+        eq->dropped = 0;
+    }
+}
+
+
 void
 mieqProcessInputEvents(void)
 {
     EventRec *e = NULL;
     ScreenPtr screen;
-    static InternalEvent event;
+    static InternalEvent event; /* mmc: optimization? */
     DeviceIntPtr dev = NULL, master = NULL;
-    size_t n_enqueued;
+#if USE_SEPARATE_QUEUES
+    int index;
+#endif
 
 #ifdef XQUARTZ
     pthread_mutex_lock(&miEventQueueMutex);
 #endif
 
-    /* Grow our queue if we are reaching capacity: < 2 * QUEUE_RESERVED_SIZE remaining */
-    n_enqueued = mieqNumEnqueued(&miEventQueue);
-    if (n_enqueued >= (miEventQueue.nevents - (2 * QUEUE_RESERVED_SIZE)) &&
-        miEventQueue.nevents < QUEUE_MAXIMUM_SIZE) {
-        ErrorF("[mi] Increasing EQ size to %lu to prevent dropped events.\n",
-               (unsigned long) (miEventQueue.nevents << 1));
-        if (!mieqGrowQueue(&miEventQueue, miEventQueue.nevents << 1)) {
-            ErrorF("[mi] Increasing the size of EQ failed.\n");
-        }
-    }
+    miManageQueue(&miEventQueue);
 
-    if (miEventQueue.dropped) {
-        ErrorF("[mi] EQ processing has resumed after %lu dropped events.\n",
-               (unsigned long) miEventQueue.dropped);
-        ErrorF
-            ("[mi] This may be caused my a misbehaving driver monopolizing the server's resources.\n");
-        miEventQueue.dropped = 0;
-    }
-
+#if USE_SEPARATE_QUEUES
 
     /* mmc: take the one with earliest timestamp:
      * could be:
@@ -846,6 +859,7 @@ mieqProcessInputEvents(void)
 #endif
     }
 
+#else // USE_SEPARATE_QUEUES
     while (miEventQueue.head != miEventQueue.tail) {
         e = &miEventQueue.events[miEventQueue.head];
 
@@ -863,6 +877,8 @@ mieqProcessInputEvents(void)
         pthread_mutex_lock(&miEventQueueMutex);
 #endif
     }
+#endif // USE_SEPARATE_QUEUES
+
 #ifdef XQUARTZ
     pthread_mutex_unlock(&miEventQueueMutex);
 #endif
