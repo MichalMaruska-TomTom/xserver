@@ -681,38 +681,35 @@ void push_time_to_devices(Time time)
     }
 }
 
-void
-mieqProcessInputEvents(void)
+static
+void miManageQueue(EventQueuePtr eq)
 {
-    EventRec *e = NULL;
-    ScreenPtr screen;
-    static InternalEvent event;
-    DeviceIntPtr dev = NULL, master = NULL;
     size_t n_enqueued;
 
-#ifdef XQUARTZ
-    pthread_mutex_lock(&miEventQueueMutex);
-#endif
-
     /* Grow our queue if we are reaching capacity: < 2 * QUEUE_RESERVED_SIZE remaining */
-    n_enqueued = mieqNumEnqueued(&miEventQueue);
-    if (n_enqueued >= (miEventQueue.nevents - (2 * QUEUE_RESERVED_SIZE)) &&
-        miEventQueue.nevents < QUEUE_MAXIMUM_SIZE) {
+    n_enqueued = mieqNumEnqueued(eq);
+    if (n_enqueued >= (eq->nevents - (2 * QUEUE_RESERVED_SIZE)) &&
+        eq->nevents < QUEUE_MAXIMUM_SIZE) {
         ErrorF("[mi] Increasing EQ size to %lu to prevent dropped events.\n",
-               (unsigned long) (miEventQueue.nevents << 1));
-        if (!mieqGrowQueue(&miEventQueue, miEventQueue.nevents << 1)) {
+               (unsigned long) (eq->nevents << 1));
+        if (!mieqGrowQueue(eq, eq->nevents << 1)) {
             ErrorF("[mi] Increasing the size of EQ failed.\n");
         }
     }
 
-    if (miEventQueue.dropped) {
+    /* report dropped */
+    if (eq->dropped) {
         ErrorF("[mi] EQ processing has resumed after %lu dropped events.\n",
-               (unsigned long) miEventQueue.dropped);
+               (unsigned long) eq->dropped);
         ErrorF
             ("[mi] This may be caused my a misbehaving driver monopolizing the server's resources.\n");
-        miEventQueue.dropped = 0;
+        eq->dropped = 0;
     }
+}
 
+void
+mieqProcessInputEvents(void)
+{
     while (miEventQueue.head != miEventQueue.tail) {
         e = &miEventQueue.events[miEventQueue.head];
 
