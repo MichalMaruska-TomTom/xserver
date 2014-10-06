@@ -196,7 +196,7 @@ mieqGrowQueue(EventQueuePtr eventQueue, size_t new_nevents)
 
     /* Initialize the new portion */
     for (i = eventQueue->nevents; i < new_nevents; i++) {
-        InternalEvent *evlist = InitEventList(1);
+        InternalEvent *evlist = InitEventList(1); /* pre-allocation! */
 
         if (!evlist) {
             size_t j;
