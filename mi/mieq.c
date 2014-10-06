@@ -781,6 +781,25 @@ void push_event_to_device(DeviceIntPtr dev, InternalEvent *event, ScreenPtr scre
         miPointerUpdateSprite(dev);
 }
 
+void
+mieqProcessInputEvents(void)
+{
+    EventRec *e = NULL;
+    ScreenPtr screen;
+    static InternalEvent event; /* mmc: optimization? */
+    DeviceIntPtr dev = NULL, master = NULL;
+#if USE_SEPARATE_QUEUES
+    int index;
+#endif
+
+#ifdef XQUARTZ
+    pthread_mutex_lock(&miEventQueueMutex);
+#endif
+
+    miManageQueue(&miEventQueue);
+
+#if USE_SEPARATE_QUEUES
+
     /* mmc: take the one with earliest timestamp:
      * could be:
      * xxxx yyyyy  ||  xxxx yyyy
