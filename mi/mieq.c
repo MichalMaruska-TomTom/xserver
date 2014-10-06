@@ -651,25 +651,32 @@ mieqProcessDeviceEvent(DeviceIntPtr dev, InternalEvent *event, ScreenPtr screen)
 
 /* Call this from ProcessInputEvents(). */
 void
-mieqProcessInputEventsTime(Time now)
+mieqProcessInputEventsTime(Time now) /* time_max */
 {
     mieqProcessInputEvents();
 #if MMC_PIPELINE
     if (now)
     {
-	DeviceIntPtr dev = NULL;
-	for (dev = inputInfo.devices; dev; dev = dev->next)
-	{
-	    if ((dev->public.pushTimeProc)
-		&& (dev->time < now)) /* no fresh event */
-		(*dev->public.pushTimeProc)(dev, now);
-	}
+        push_time_to_devices(now);
     }
 #endif
 }
 
 void
 mieqProcessInputEvents(void)
+static
+void push_time_to_devices(Time time)
+{
+    int i;
+    DeviceIntPtr pDev;
+    for (i=0; i< mi_devices; i++) {
+        pDev = devices[i];
+
+        if ((dev->public.pushTimeProc)
+            && (dev->time < time)) /* no fresh event */
+            (*dev->public.pushTimeProc)(dev, time);
+    }
+}
 {
     EventRec *e = NULL;
     ScreenPtr screen;
