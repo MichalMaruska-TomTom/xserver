@@ -75,6 +75,8 @@ typedef struct _Event {
     DeviceIntPtr pDev;          /* device this event _originated_ from */
 } EventRec, *EventPtr;
 
+
+/* mmc: so N of these: allocate on new device, deallocate on */
 typedef struct _EventQueue {
     HWEventQueueType head, tail;        /* long for SetInputCheck */
     CARD32 lastEventTime;       /* to avoid time running backwards */
@@ -86,6 +88,33 @@ typedef struct _EventQueue {
 } EventQueueRec, *EventQueuePtr;
 
 static EventQueueRec miEventQueue;
+
+EventQueuePtr *queues;
+/* what to do when the device is deallocated? */
+DeviceIntPtr *devices;
+
+int mi_devices;
+
+static Bool mieqInit_device(EventQueuePtr eq);
+
+
+Bool mieq_init_device_queue(DeviceIntPtr dev)
+{
+    // mi_devices;
+    if ((devices=realloc(devices, (mi_devices + 1) * sizeof(DeviceIntPtr))) == NULL)
+        return FALSE;
+    if ((queues =realloc(queues, (mi_devices + 1) * sizeof(EventQueuePtr))) == NULL)
+        /* no worry about devices; */
+        return FALSE;
+
+    devices[mi_devices] = dev;  /* not good. */
+    queues[mi_devices] = malloc(sizeof(EventQueueRec));
+    mieqInit_device(queues[mi_devices]);
+    mi_devices++;
+    ErrorF("%s: %d\n", __func__, mi_devices);
+    return TRUE;
+}
+
 
 #ifdef XQUARTZ
 #include  <pthread.h>
@@ -188,13 +217,20 @@ mieqGrowQueue(EventQueuePtr eventQueue, size_t new_nevents)
 Bool
 mieqInit(void)
 {
-    memset(&miEventQueue, 0, sizeof(miEventQueue));
-    miEventQueue.lastEventTime = GetTimeInMillis();
+    return mieqInit_device(&miEventQueue);
+}
 
-    if (!mieqGrowQueue(&miEventQueue, QUEUE_INITIAL_SIZE))
+
+static Bool
+mieqInit_device(EventQueuePtr eq)
+{
+    memset(eq, 0, sizeof(EventQueueRec)); /* fixme: */
+    eq->lastEventTime = GetTimeInMillis();
+
+    if (!mieqGrowQueue(eq, QUEUE_INITIAL_SIZE))
         FatalError("Could not allocate event queue.\n");
 
-    SetInputCheck(&miEventQueue.head, &miEventQueue.tail);
+    SetInputCheck(&eq->head, &eq->tail);
     return TRUE;
 }
 
@@ -241,9 +277,9 @@ mieqReservedCandidate(InternalEvent *e)
  */
 
 void
-mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
+mieqEnqueueIn(DeviceIntPtr pDev, InternalEvent *e, EventQueuePtr eq)
 {
-    unsigned int oldtail = miEventQueue.tail;
+    unsigned int oldtail = eq->tail;
     InternalEvent *evt;
     int isMotion = 0;
     int evlen;
@@ -257,25 +293,25 @@ mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
 
     verify_internal_event(e);
 
-    n_enqueued = mieqNumEnqueued(&miEventQueue);
+    n_enqueued = mieqNumEnqueued(eq);
 
     /* avoid merging events from different devices */
     if (e->any.type == ET_Motion)
         isMotion = pDev->id;
 
-    if (isMotion && isMotion == miEventQueue.lastMotion &&
-        oldtail != miEventQueue.head) {
-        oldtail = (oldtail - 1) % miEventQueue.nevents;
+    if (isMotion && isMotion == eq->lastMotion &&
+        oldtail != eq->head) {
+        oldtail = (oldtail - 1) % eq->nevents;
     }
-    else if ((n_enqueued + 1 == miEventQueue.nevents) ||
-             ((n_enqueued + 1 >= miEventQueue.nevents - QUEUE_RESERVED_SIZE) &&
+    else if ((n_enqueued + 1 == eq->nevents) ||
+             ((n_enqueued + 1 >= eq->nevents - QUEUE_RESERVED_SIZE) &&
               !mieqReservedCandidate(e))) {
         /* Toss events which come in late.  Usually this means your server's
          * stuck in an infinite loop somewhere, but SIGIO is still getting
          * handled.
          */
-        miEventQueue.dropped++;
-        if (miEventQueue.dropped == 1) {
+        eq->dropped++;
+        if (eq->dropped == 1) {
             ErrorFSigSafe("[mi] EQ overflowing.  Additional events will be "
                          "discarded until existing events are processed.\n");
             xorg_backtrace();
@@ -283,12 +319,12 @@ mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
                          "a culprit higher up the stack.\n");
             ErrorFSigSafe("[mi] mieq is *NOT* the cause.  It is a victim.\n");
         }
-        else if (miEventQueue.dropped % QUEUE_DROP_BACKTRACE_FREQUENCY == 0 &&
-                 miEventQueue.dropped / QUEUE_DROP_BACKTRACE_FREQUENCY <=
+        else if (eq->dropped % QUEUE_DROP_BACKTRACE_FREQUENCY == 0 &&
+                 eq->dropped / QUEUE_DROP_BACKTRACE_FREQUENCY <=
                  QUEUE_DROP_BACKTRACE_MAX) {
             ErrorFSigSafe("[mi] EQ overflow continuing.  %zu events have been "
-                         "dropped.\n", miEventQueue.dropped);
-            if (miEventQueue.dropped / QUEUE_DROP_BACKTRACE_FREQUENCY ==
+                         "dropped.\n", eq->dropped);
+            if (eq->dropped / QUEUE_DROP_BACKTRACE_FREQUENCY ==
                 QUEUE_DROP_BACKTRACE_MAX) {
                 ErrorFSigSafe("[mi] No further overflow reports will be "
                              "reported until the clog is cleared.\n");
@@ -303,7 +339,7 @@ mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
     }
 
     evlen = e->any.length;
-    evt = miEventQueue.events[oldtail].events;
+    evt = eq->events[oldtail].event; /* so it's pre-allocated? */
     memcpy(evt, e, evlen);
 
     time = e->any.time;
@@ -319,19 +355,38 @@ mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
 
     /* Make sure that event times don't go backwards - this
      * is "unnecessary", but very useful. */
-    if (time < miEventQueue.lastEventTime &&
-        miEventQueue.lastEventTime - time < 10000)
-        e->any.time = miEventQueue.lastEventTime;
+    if (time < eq->lastEventTime &&
+        eq->lastEventTime - time < 10000)
+        e->any.time = eq->lastEventTime;
 #endif
 
-    miEventQueue.lastEventTime = evt->any.time;
-    miEventQueue.events[oldtail].pScreen = pDev ? EnqueueScreen(pDev) : NULL;
-    miEventQueue.events[oldtail].pDev = pDev;
+    eq->lastEventTime = evt->any.time;
+    eq->events[oldtail].pScreen = pDev ? EnqueueScreen(pDev) : NULL;
+    eq->events[oldtail].pDev = pDev;
 
-    miEventQueue.lastMotion = isMotion;
-    miEventQueue.tail = (oldtail + 1) % miEventQueue.nevents;
+    eq->lastMotion = isMotion;
+    eq->tail = (oldtail + 1) % eq->nevents;
 #ifdef XQUARTZ
     pthread_mutex_unlock(&miEventQueueMutex);
+#endif
+}
+
+void
+mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
+{
+    /* find the right queue. */
+#if USE_SEPARATE_QUEUES
+    int i;
+    for (i=0; i< mi_devices; i++) {
+        if (devices[i] == pDev) {
+            mieqEnqueueIn(pDev, e, queues[i]);
+            break;
+        }
+    }
+    if (i == mi_devices)
+        ErrorFSigSafe("did not find the queue! DROPPING");
+#else
+    mieqEnqueueIn(pDev, e, &miEventQueue);
 #endif
 }
 
