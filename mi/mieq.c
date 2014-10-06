@@ -384,6 +384,7 @@ mieqEnqueueIn(DeviceIntPtr pDev, InternalEvent *e, EventQueuePtr eq)
 #endif
 }
 
+#define USE_SEPARATE_QUEUES 1
 void
 mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
 {
