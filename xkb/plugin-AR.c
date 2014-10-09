@@ -20,7 +20,8 @@
 #define USE_COLORS 1
 #include "color-debug.h"
 
-#define TIME_FORMAT "%lu"
+#include <inttypes.h>
+#define TIME_FORMAT PRIu32
 
 /* How it works:
  * the processor has a queue of keys to `repeat'. (single-linked list)
@@ -166,7 +167,7 @@ ar_process_and_reinsert(PluginInstance* plugin, key_repeat_info* node,
 
     if (!node->press) {
 #if (DEBUG_AUTOREPEAT & 1)
-	ErrorF("%s%s: RELEASE %d (before " TIME_FORMAT "(now))%s\n", repeat_color, __FUNCTION__,
+	ErrorF("%s%s: RELEASE %d (before %" TIME_FORMAT "(now))%s\n", repeat_color, __FUNCTION__,
 	       key, time, color_reset);
 #endif
 	/* todo: this should use:
@@ -189,7 +190,7 @@ ar_process_and_reinsert(PluginInstance* plugin, key_repeat_info* node,
     }
 
 #if (DEBUG_AUTOREPEAT & 1)
-    ErrorF("%s%s: PRESS %d  (before " TIME_FORMAT "(now))%s\n",
+    ErrorF("%s%s: PRESS %d  (before %" TIME_FORMAT "(now))%s\n",
            repeat_color, __FUNCTION__, key, time, color_reset);
 #endif
 
@@ -238,13 +239,12 @@ ar_push_events(PluginInstance* plugin, /* CARD32 month,*/ Time time)
     if (scheduled_repeats) {
         int generated = 0;
 #if DEBUG_AUTOREPEAT & 4
-        ErrorF("%s%s: do we have something to repeat before time: %d:"
-            TIME_FORMAT " ?%s\n",
-            repeat_color, __FUNCTION__, 0 /*month*/, time, color_reset);
+        ErrorF("%s%s: do we have something to repeat before time: %d:%" TIME_FORMAT
+               " ?%s\n", repeat_color, __FUNCTION__, 0 /*month*/, time, color_reset);
 #endif
 	while (!plugin_frozen(next) && (time >= scheduled_repeats->time)) {
 #if DEBUG_AUTOREPEAT & 2
-        ErrorF("%s%s " TIME_FORMAT "%s\n", repeat_color, __FUNCTION__,
+        ErrorF("%s%s %" TIME_FORMAT "%s\n", repeat_color, __FUNCTION__,
             scheduled_repeats->time,
             color_reset);
 #endif
@@ -300,8 +300,9 @@ ar_start_keycode(PluginInstance* plugin, KeyCode key, CARD32 now)
             const KeySym *sym= XkbKeySymsPtr(xkbi->desc,key);
             if ((!sym) || (! isalpha(* (unsigned char*) sym)))
                 sym = (const KeySym*) " ";
-            ErrorF("%sAdding a repeating key %d (%s%c%s) at " TIME_FORMAT ", starting time "
-                   TIME_FORMAT "%s\n", repeat_color, key, key_color, (char)*sym, repeat_color,
+            ErrorF("%sAdding a repeating key %d (%s%c%s) at %" TIME_FORMAT
+                   ", starting time %" TIME_FORMAT "%s\n",
+                   repeat_color, key, key_color, (char)*sym, repeat_color,
                    node->time, now, color_reset);
         }
 #endif
@@ -362,7 +363,7 @@ ar_count_events(key_repeat_info* repeats)
     int i = 0;
     key_repeat_info* cursor;
     for (cursor = repeats; cursor; cursor = cursor->next) {
-	ErrorF("%s %d: %d  @ " TIME_FORMAT "\n", __FUNCTION__, i, cursor->key, cursor->time);
+	ErrorF("%s %d: %d  @ %" TIME_FORMAT "\n", __FUNCTION__, i, cursor->key, cursor->time);
 	i++;
     }
     return i;
@@ -381,7 +382,7 @@ ar_set_wakeup(PluginInstance *plugin)
     {
 	plugin->wakeup_time = repeats->time;
 #if DEBUG_AUTOREPEAT & 2
-         ErrorF("%s wakeup time is " TIME_FORMAT "! We have %d events!\n", __FUNCTION__,
+         ErrorF("%s wakeup time is %" TIME_FORMAT "! We have %d events!\n", __FUNCTION__,
                 plugin->wakeup_time, ar_count_events(repeats));
 #endif
     } else
@@ -422,7 +423,7 @@ ar_process_key_event(PluginInstance* plugin,
    XkbDescPtr xkb = xkbi->desc;
 
 #if DEBUG_AUTOREPEAT & 4
-   ErrorF("%s: %s " TIME_FORMAT "\n", __FUNCTION__, keybd->name, event->any.time);
+   ErrorF("%s: %s %" TIME_FORMAT "\n", __FUNCTION__, keybd->name, event->any.time);
 #endif
 
    /* we might check against repeated, to verify the DDX does not repeat itself */
@@ -483,7 +484,7 @@ ar_accept_time(PluginInstance* plugin, Time time)
     /* when could it be frozen? actively grabbed. we don't get any signal
      * about such events! */
 #if DEBUG_AUTOREPEAT & 4
-    ErrorF("%s: %s " TIME_FORMAT "\n", __FUNCTION__, plugin->device->name, time);
+    ErrorF("%s: %s %" TIME_FORMAT "\n", __FUNCTION__, plugin->device->name, time);
 #endif
     if (! plugin_frozen(plugin->next)) {
 	ar_push_events(plugin, time);
