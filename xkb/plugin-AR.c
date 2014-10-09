@@ -67,12 +67,17 @@ ar_synthesize_event(PluginInstance* plugin,
 		    BYTE	keyCode,
 		    Time  time)
 {
-    DeviceEvent event;
+    InternalEvent event;
+    memset(&event, 0, sizeof event);
 #if 1
-    /* todo: use the init_event from ../dix/getevents.c
-       init_event(keybd, &event, time) */
     /* how to init a DeviceEvent? For now I init the union-sibling. */
-    init_raw(keybd, (RawDeviceEvent*) &event, time, type, keyCode);
+    init_raw(keybd, &(event.raw_event), time, type, keyCode);
+    /* But it's not raw, it's keyboard. */
+    if (type == KeyRelease) {
+        event.device_event.type = ET_KeyRelease;
+    } else {
+        event.device_event.type = ET_KeyPress;
+    }
 #else
     memset(&event, 0, sizeof(DeviceEvent));
     event.header = ET_Internal;
@@ -82,13 +87,13 @@ ar_synthesize_event(PluginInstance* plugin,
     event.deviceid = keybd->id;
 #endif
 
-    event.type = type;
-    event.detail.key = keyCode;
-    event.key_repeat = TRUE;
+// different!    event.type = type;
+//    event.detail.key = keyCode;
+
+//    event.key_repeat = TRUE;
 
     assert(!plugin_frozen(plugin->next));
-    PluginClass(plugin->next)->ProcessEvent(plugin->next,(InternalEvent*) &event,
-					    CALLER_OWNS);
+    PluginClass(plugin->next)->ProcessEvent(plugin->next, &event, CALLER_OWNS);
 }
 
 
