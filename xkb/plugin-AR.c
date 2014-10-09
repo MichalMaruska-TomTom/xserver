@@ -358,7 +358,7 @@ ar_cancel_key(PluginInstance* plugin, KeyCode key)
 
 #if DEBUG_AUTOREPEAT
 static int
-ar_count_events(key_repeat_info* repeats)
+ar_count_events(key_repeat_info *repeats)
 {
     int i = 0;
     key_repeat_info* cursor;
