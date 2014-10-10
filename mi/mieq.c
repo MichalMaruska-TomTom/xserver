@@ -707,6 +707,52 @@ void miManageQueue(EventQueuePtr eq)
     }
 }
 
+
+/*  so which one first?
+ *  every device ... as on the DIX side, is awaiting events, and time.
+ *  so, we take the earliest event, and possibly Push the time on all.
+ *  then we push the event.
+ *  so:  time - event - time - event ....
+ *
+ */
+#if USE_SEPARATE_QUEUES
+/**< Time in ms. */
+
+static inline
+int EVENT_EARLIER(Time time, Time time_b)
+{
+    return (time < time_b);
+}
+
+
+/* return the index of the queue. Needs the mutex.
+ * returns -1 if none. */
+static
+int find_first_non_empty(EventRec **ret_event)
+{
+    int i;
+    int earliest = -1;
+    EventQueueRec const *eq;           /* const */
+    EventRec *earliestEvent = NULL;
+    EventRec *e = NULL;
+    for (i=0; i< mi_devices; i++) {
+        eq = queues[i];
+
+        if (eq->head != eq->tail) {
+            e = &eq->events[eq->head];
+            if (!earliestEvent
+                || (EVENT_EARLIER(e->event->any.time, earliestEvent->event->any.time))) {
+                earliest = i;
+                earliestEvent = e;
+            }
+        }
+    }
+
+    *ret_event = earliestEvent;
+    return earliest;
+}
+#endif // USE_SEPARATE_QUEUES
+
 static inline
 void push_event_to_device(DeviceIntPtr dev, InternalEvent *event, ScreenPtr screen)
 {
