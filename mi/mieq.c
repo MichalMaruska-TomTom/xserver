@@ -652,19 +652,6 @@ mieqProcessDeviceEvent(DeviceIntPtr dev, InternalEvent *event, ScreenPtr screen)
     }
 }
 
-/* Call this from ProcessInputEvents(). */
-void
-mieqProcessInputEventsTime(Time now)
-{
-    mieqProcessInputEvents();
-#if MMC_PIPELINE
-    if (now)
-    {
-        push_time_to_devices(now);
-    }
-#endif
-}
-
 static
 void push_time_to_devices(Time time)
 {
