@@ -834,16 +834,19 @@ mieqProcessInputEventsTime(Time time_max)
         // Imagine the last read (b/c of select) is from mouse,
         // and it deliveres `last_minute' events.
         // Cannot be applied to other devices!
-        ErrorF("maybe push time %lu\n", event.any.time);
-        if (still_pushing_time
-            && (time_max > event.any.time)) {
-            if (pushed_time < time_max) {
-                push_time_to_devices(time_max);
+        if (still_pushing_time) {
+            if (time_max > event.any.time) {
+                pushed_time = event.any.time;
+                push_time_to_devices(pushed_time);
+            } else {
+                still_pushing_time = FALSE;
+                /* last time: */
+                if (pushed_time < time_max) {
+                    push_time_to_devices(time_max);
+                }
             }
-            still_pushing_time = FALSE;
-        } else {
-            push_time_to_devices(event.any.time);
         }
+
         // push the event.
         push_event_to_device(dev, &event, screen);
 
