@@ -659,7 +659,9 @@ void push_time_to_devices(Time time)
     int i;
     DeviceIntPtr dev;
     /* I need to push to master! */
+#if DEBUG
     ErrorF("pushing time %" PRIu64 "\n", (unsigned long) time);
+#endif
     for (i=0; i< mi_devices; i++) {
         DeviceIntPtr master = NULL;
         dev = devices[i];
