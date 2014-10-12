@@ -829,7 +829,8 @@ mieqProcessInputEventsTime(Time time_max)
                 still_pushing_time = FALSE;
                 /* last time: */
                 if (pushed_time < time_max) {
-                    push_time_to_devices(time_max);
+                    pushed_time = time_max;
+                    push_time_to_devices(pushed_time);
                 }
             }
         }
@@ -867,4 +868,9 @@ mieqProcessInputEventsTime(Time time_max)
 #ifdef XQUARTZ
     pthread_mutex_unlock(&miEventQueueMutex);
 #endif
+
+    if (pushed_time < time_max) {
+        pushed_time = time_max;
+        push_time_to_devices(pushed_time);
+    }
 }
