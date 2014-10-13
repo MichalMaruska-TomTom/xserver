@@ -229,7 +229,7 @@ extern BOOL EventIsKeyRepeat(xEvent *event);
 /* mmc: i should dismantle this tracing. But later. */
 #define DEBUG_MMC 1
 #undef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <color-debug.h>
 
 /**
@@ -1394,9 +1394,10 @@ ComputeFreezes(void)
 #endif
           return;
       }
-
+#if DEBUG_MMC && 4
     ErrorF("%s%s%s: now scanning and releasing events!\n",
            event_color, __FUNCTION__, color_reset);
+#endif
     syncEvents.playingEvents = TRUE;
     /* mmc: this is only for replaying the 1 event which caused Grab */
     if (replayDev) {
