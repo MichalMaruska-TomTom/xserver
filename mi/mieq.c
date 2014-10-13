@@ -799,6 +799,18 @@ mieqProcessInputEventsTime(Time time_max)
     miManageQueue(&miEventQueue);
 
 #if USE_SEPARATE_QUEUES
+    /* mmc: take the one with earliest timestamp:
+     * could be:
+     * xxxx yyyyy  ||  xxxx yyyy
+     * mmc: I want to have separate queues ....
+     *
+     *while (1) { find ; if !found  break; process }
+     * So, first I want to know how many events
+     * how many generations -- reads ?
+     * do we even select() when this queue is non-empty?
+     *  device[i] -> first y of yyyy
+     * here I would take the first of ND number-of-devices.
+     * */
     while ((index = find_first_non_empty(&e)) != -1)
     {
         EventQueuePtr eq;
