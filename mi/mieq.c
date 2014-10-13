@@ -36,6 +36,8 @@ in this Software without prior written authorization from The Open Group.
 #include <dix-config.h>
 #endif
 
+#include <inttypes.h>
+
 #include   <X11/X.h>
 #include   <X11/Xmd.h>
 #include   <X11/Xproto.h>
@@ -669,6 +671,7 @@ void push_time_to_devices(Time time)
     int i;
     DeviceIntPtr dev;
     /* I need to push to master! */
+    ErrorF("pushing time %" PRIu64 "\n", (unsigned long) time);
     for (i=0; i< mi_devices; i++) {
         DeviceIntPtr master = NULL;
         dev = devices[i];
