@@ -143,9 +143,9 @@ typedef struct _TimeStamp {
 
 /* BlockHandlerProcPtr is typedef'd in x11proto/Xdefs.h
  * This version accepts the current time. */
-typedef void (* TimeBlockHandlerProcPtr)(char* /* blockData */,
+typedef void (* TimeBlockHandlerProcPtr)(void* /* blockData */,
 					 OSTimePtr /* pTimeout */,
-					 char* /* pReadmask */,
+					 void* /* pReadmask */,
 					 Time /* current time*/);
 /* dispatch.c */
 
