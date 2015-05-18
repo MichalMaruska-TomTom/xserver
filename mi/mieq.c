@@ -818,6 +818,10 @@ mieqProcessInputEventsTime(Time time_max)
 #ifdef XQUARTZ
         pthread_mutex_unlock(&miEventQueueMutex);
 #endif
+        // unfortunately there is still a problem inside the kernel:
+        // if mouse event at T1 arrives, after select at T2,
+        // maybe there are still keyboard events to COME,
+        // from between  T2 and T1 !!! fixme!
 
         // push time into all devices
         // mmc: that's why I need the @now to limit this:
