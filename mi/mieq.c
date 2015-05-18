@@ -699,19 +699,35 @@ mieqProcessDeviceEvent(DeviceIntPtr dev, InternalEvent *event, ScreenPtr screen)
 
 /* Call this from ProcessInputEvents(). */
 void
-mieqProcessInputEventsTime(Time now)
+mieqProcessInputEventsTime(Time now) /* time_max */
 {
     mieqProcessInputEvents();
 #if MMC_PIPELINE
     if (now)
     {
-	DeviceIntPtr dev = NULL;
-	for (dev = inputInfo.devices; dev; dev = dev->next)
-	{
-	    if ((dev->public.pushTimeProc)
-		&& (dev->time < now)) /* no fresh event */
-		(*dev->public.pushTimeProc)(dev, now);
-	}
+        push_time_to_devices(now);
+    }
+}
+
+static
+void push_time_to_devices(Time time)
+{
+    int i;
+    DeviceIntPtr dev;
+    /* I need to push to master! */
+#if DEBUG
+    ErrorF("pushing time %" PRIu64 "\n", (unsigned long) time);
+#endif
+    for (i=0; i< mi_devices; i++) {
+        DeviceIntPtr master = NULL;
+        dev = devices[i];
+        /* mmc: when null? */
+        master = (dev) ? GetMaster(dev, MASTER_ATTACHED) : NULL;
+        dev = master;
+
+        if ((dev && dev->public.pushTimeProc)
+            && (dev->time < time)) /* no fresh event */
+            (*dev->public.pushTimeProc)(dev, time);
     }
 }
 
