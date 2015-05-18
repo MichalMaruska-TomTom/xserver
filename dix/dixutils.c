@@ -393,10 +393,6 @@ BlockHandler(void *pTimeout, void *pReadmask, Time now)
     for (i = 0; i < screenInfo.numGPUScreens; i++)
         (*screenInfo.gpuscreens[i]->BlockHandler) (screenInfo.gpuscreens[i],
                                                    pTimeout, pReadmask);
-    for (i = 0; i < numHandlers; i++)
-        if (!handlers[i].deleted)
-            (*handlers[i].BlockHandler) (handlers[i].blockData,
-                                         pTimeout, pReadmask);
     for (i = 0; i < numHandlers; i++) {
         if (!handlers[i].deleted)
             if (handlers[i].wantsTime)
