@@ -666,11 +666,19 @@ static
 void push_time_to_devices(Time time)
 {
     int i;
-    DeviceIntPtr pDev;
+    DeviceIntPtr dev;
+    /* I need to push to master! */
+#if DEBUG
+    ErrorF("pushing time %" PRIu64 "\n", (unsigned long) time);
+#endif
     for (i=0; i< mi_devices; i++) {
-        pDev = devices[i];
+        DeviceIntPtr master = NULL;
+        dev = devices[i];
+        /* mmc: when null? */
+        master = (dev) ? GetMaster(dev, MASTER_ATTACHED) : NULL;
+        dev = master;
 
-        if ((dev->public.pushTimeProc)
+        if ((dev && dev->public.pushTimeProc)
             && (dev->time < time)) /* no fresh event */
             (*dev->public.pushTimeProc)(dev, time);
     }
