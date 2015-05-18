@@ -139,30 +139,36 @@ static void
 set_timeout(DeviceIntPtr keybd, struct timeval** wtp, void *mask, Time now)
 {
     struct timeval* wt = *wtp;
-
     Time timeout;
     static struct timeval waittime;     /* (signed)  longs! */
+    DeviceIntPtr master = NULL;
 
-    if (keybd->pipeline->wakeup_time) {
-        /* fixme: This should be redesigned in os/WaitFor.c */
-        if (wt == NULL)
-            *wtp = wt = &waittime;
+    master = (keybd) ? GetMaster(keybd, MASTER_ATTACHED) : NULL;
 
-        /* unsigned */
-        timeout = (keybd->pipeline->wakeup_time <= now)? 0 :
-            keybd->pipeline->wakeup_time - now;
+    if (master) {
+        DeviceIntPtr dev  = master;
+        /* have to look at the MASTER! */
+        if (dev->pipeline->wakeup_time) {
+            /* fixme: This should be redesigned in os/WaitFor.c */
+            if (wt == NULL)
+                *wtp = wt = &waittime;
 
-        /* copied from os/WaitFor.c */
-        waittime.tv_sec = timeout / MILLI_PER_SECOND;
-        waittime.tv_usec = (timeout % MILLI_PER_SECOND) *
-            (1000000 / MILLI_PER_SECOND);
+            /* unsigned */
+            timeout = (dev->pipeline->wakeup_time <= now)? 0 :
+                dev->pipeline->wakeup_time - now;
 
-        if (wt->tv_sec > waittime.tv_sec) {
-            wt->tv_sec = waittime.tv_sec;
-            wt->tv_usec = waittime.tv_usec;
-        } else if ((wt->tv_sec == waittime.tv_sec)
-                   && (wt->tv_usec > waittime.tv_usec)) {
-            wt->tv_usec = waittime.tv_usec;
+            /* copied from os/WaitFor.c */
+            waittime.tv_sec = timeout / MILLI_PER_SECOND;
+            waittime.tv_usec = (timeout % MILLI_PER_SECOND) *
+                (1000000 / MILLI_PER_SECOND);
+
+            if (wt->tv_sec > waittime.tv_sec) {
+                wt->tv_sec = waittime.tv_sec;
+                wt->tv_usec = waittime.tv_usec;
+            } else if ((wt->tv_sec == waittime.tv_sec)
+                       && (wt->tv_usec > waittime.tv_usec)) {
+                wt->tv_usec = waittime.tv_usec;
+            }
         }
     }
 }
