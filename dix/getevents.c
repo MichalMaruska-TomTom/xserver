@@ -156,6 +156,8 @@ key_is_down(DeviceIntPtr pDev, int key_code, int type)
     return ret;
 }
 
+/* mmc: I see 2 states! POSTED & PROCESSED */
+
 static Bool
 key_autorepeats(DeviceIntPtr pDev, int key_code)
 {
@@ -1030,6 +1032,7 @@ updateHistory(DeviceIntPtr dev, ValuatorMask *mask, CARD32 ms)
     }
 }
 
+/* mmc: still via `mi' */
 static void
 queueEventList(DeviceIntPtr device, InternalEvent *events, int nevents)
 {
@@ -1072,6 +1075,17 @@ QueueKeyboardEvents(DeviceIntPtr device, int type,
     queueEventList(device, InputEventList, nevents);
 }
 
+void
+QueueKeyboardEventsTime(DeviceIntPtr device, int type,
+                        int keycode, const ValuatorMask *mask, Time time)
+{
+    int nevents;
+
+    nevents = GetKeyboardEventsTime(InputEventList, device, type, keycode, mask, time);
+    queueEventList(device, InputEventList, nevents);
+}
+
+
 /**
  * Returns a set of InternalEvents for KeyPress/KeyRelease, optionally
  * also with valuator events.
@@ -1085,8 +1099,16 @@ int
 GetKeyboardEvents(InternalEvent *events, DeviceIntPtr pDev, int type,
                   int key_code, const ValuatorMask *mask_in)
 {
+    return GetKeyboardEventsTime(events, pDev, type, key_code,
+                                 mask_in, GetTimeInMillis());
+}
+
+int
+GetKeyboardEventsTime(InternalEvent *events, DeviceIntPtr pDev, int type,
+                  int key_code, const ValuatorMask *mask_in, Time time)
+{
     int num_events = 0;
-    CARD32 ms = 0;
+    CARD32 ms = time;
     DeviceEvent *event;
     RawDeviceEvent *raw;
     ValuatorMask mask;
@@ -1128,8 +1150,6 @@ GetKeyboardEvents(InternalEvent *events, DeviceIntPtr pDev, int type,
             pDev->key->xkbInfo->desc->map->modmap[key_code])
             return 0;
     }
-
-    ms = GetTimeInMillis();
 
     raw = &events->raw_event;
     events++;
