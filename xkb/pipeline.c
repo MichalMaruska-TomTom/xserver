@@ -95,6 +95,8 @@ xkb_init_pipeline(DeviceIntPtr device)
      * WaitForSomething consults only
      * timers, and blockHandlers to set such timeout. So i register one! */
     RegisterTimeBlockAndWakeupHandlers(set_timeout, // (TimeBlockHandlerProcPtr)
+                                       /* fixme: maybe master, not device ?
+                                        * hm, no! This is master !!!*/
                                        (TimeWakeupHandlerProcPtr) NoopDDA, device);
 }
 
@@ -105,6 +107,8 @@ push_time_on_keyboard(DeviceIntPtr keybd, Time upper_bound)
     /* assert (keybd->pipeline);*/
     PluginInstance* plugin = keybd->pipeline;
 
+    /* mmc: fixme: this is not maintained!
+     * keybd->time is always zero! */
     if (keybd->time < upper_bound) { /* no event  */
         if (plugin->wakeup_time <= upper_bound) /* recent */
             PluginClass(plugin)->ProcessTime (plugin, upper_bound);
