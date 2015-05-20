@@ -70,7 +70,7 @@ in this Software without prior written authorization from The Open Group.
 #define DequeueScreen(dev) dev->spriteInfo->sprite->pDequeueScreen
 
 typedef struct _Event {
-    InternalEvent *events;
+    InternalEvent *event;
     ScreenPtr pScreen;
     DeviceIntPtr pDev;          /* device this event _originated_ from */
 } EventRec, *EventPtr;
@@ -140,11 +140,11 @@ mieqGrowQueue(EventQueuePtr eventQueue, size_t new_nevents)
             size_t j;
 
             for (j = 0; j < i; j++)
-                FreeEventList(new_events[j].events, 1);
+                FreeEventList(new_events[j].event, 1);
             free(new_events);
             return FALSE;
         }
-        new_events[i].events = evlist;
+        new_events[i].event = evlist;
     }
 
     /* And update our record */
@@ -178,9 +178,9 @@ mieqFini(void)
     int i;
 
     for (i = 0; i < miEventQueue.nevents; i++) {
-        if (miEventQueue.events[i].events != NULL) {
-            FreeEventList(miEventQueue.events[i].events, 1);
-            miEventQueue.events[i].events = NULL;
+        if (miEventQueue.events[i].event != NULL) {
+            FreeEventList(miEventQueue.events[i].event, 1);
+            miEventQueue.events[i].event = NULL;
         }
     }
     free(miEventQueue.events);
@@ -557,7 +557,7 @@ mieqProcessInputEvents(void)
     while (miEventQueue.head != miEventQueue.tail) {
         e = &miEventQueue.events[miEventQueue.head];
 
-        event = *e->events;
+        event = *e->event;
         dev = e->pDev;
         screen = e->pScreen;
 
