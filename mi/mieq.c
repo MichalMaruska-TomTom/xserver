@@ -349,7 +349,6 @@ mieqEnqueueIn(DeviceIntPtr pDev, InternalEvent *e, EventQueuePtr eq)
     InternalEvent *evt;
     int isMotion = 0;
     int evlen;
-    Time time;
     size_t n_enqueued;
 
 #ifdef XQUARTZ
@@ -408,8 +407,6 @@ mieqEnqueueIn(DeviceIntPtr pDev, InternalEvent *e, EventQueuePtr eq)
     evt = eq->events[oldtail].event; /* so it's pre-allocated? */
     memcpy(evt, e, evlen);
 
-    time = e->any.time;
-
 #if !MMC_PIPELINE
     /* I don't want any arbitrary changes to the event timestamps.
        So skip this.
@@ -421,7 +418,7 @@ mieqEnqueueIn(DeviceIntPtr pDev, InternalEvent *e, EventQueuePtr eq)
 
     /* Make sure that event times don't go backwards - this
      * is "unnecessary", but very useful. */
-    if (time < eq->lastEventTime &&
+    if (e->any.time < eq->lastEventTime &&
         eq->lastEventTime - time < 10000)
         e->any.time = eq->lastEventTime;
 #endif
