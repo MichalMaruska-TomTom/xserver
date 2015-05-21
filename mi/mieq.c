@@ -298,7 +298,6 @@ mieqEnqueueIn(DeviceIntPtr pDev, InternalEvent *e, EventQueuePtr eq)
     InternalEvent *evt;
     int isMotion = 0;
     int evlen;
-    Time time;
     size_t n_enqueued;
 
 #ifdef XQUARTZ
@@ -357,8 +356,6 @@ mieqEnqueueIn(DeviceIntPtr pDev, InternalEvent *e, EventQueuePtr eq)
     evt = eq->events[oldtail].event; /* so it's pre-allocated? */
     memcpy(evt, e, evlen);
 
-    time = e->any.time;
-
 #if !MMC_PIPELINE
     /* I don't want any arbitrary changes to the event timestamps.
        So skip this.
@@ -370,7 +367,7 @@ mieqEnqueueIn(DeviceIntPtr pDev, InternalEvent *e, EventQueuePtr eq)
 
     /* Make sure that event times don't go backwards - this
      * is "unnecessary", but very useful. */
-    if (time < eq->lastEventTime &&
+    if (e->any.time < eq->lastEventTime &&
         eq->lastEventTime - time < 10000)
         e->any.time = eq->lastEventTime;
 #endif
@@ -789,9 +786,9 @@ mieqProcessInputEventsTime(Time time_max)
     static InternalEvent event; /* mmc: optimization? */
     DeviceIntPtr dev = NULL;
 #if USE_SEPARATE_QUEUES
+    Time pushed_time = 0;
     int index;
     Bool still_pushing_time = TRUE;
-    Time pushed_time = 0;
 #endif
 
 #ifdef XQUARTZ
@@ -885,8 +882,11 @@ mieqProcessInputEventsTime(Time time_max)
     pthread_mutex_unlock(&miEventQueueMutex);
 #endif
 
+    /* fixme: is this not necessary for !USE_SEPARATE_QUEUES ? */
+#if USE_SEPARATE_QUEUES
     if (pushed_time < time_max) {
         pushed_time = time_max;
         push_time_to_devices(pushed_time);
     }
+#endif // USE_SEPARATE_QUEUES
 }
