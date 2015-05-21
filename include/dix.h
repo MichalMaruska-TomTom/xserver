@@ -225,7 +225,7 @@ extern _X_EXPORT void BlockHandler(void *pTimeout,
 /* When woken by kernel, we need to know some time of the wakeup:
    Time of last event or (guaranteed) non event. */
 extern _X_EXPORT void WakeupHandler(int result,
-                                    void *pReadmask
+                                    void *pReadmask,
                                     Time now);
 
 
