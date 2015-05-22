@@ -1354,7 +1354,10 @@ maybe_special_function(DeviceIntPtr device,unsigned int key_code,
 {
 #if 1
 #define MIN_KEYCODE 8
-    if ((/* is_keyboard */ is_down)
+    InputInfoPtr pInfo = (InputInfoPtr) device->public.devicePrivate;
+    if (strcmp(pInfo->type_name,XI_KEYBOARD) == 0) {
+        if ((/* is_keyboard */ is_down)
+        /* mmc: fixme: at least check that those keys are on the device. */
 	&& key_is_down(device, MIN_KEYCODE + KEY_LEFTCTRL, KEY_POSTED)
 	&& key_is_down(device, MIN_KEYCODE + KEY_LEFTALT, KEY_POSTED)
 	) {
@@ -1365,6 +1368,7 @@ maybe_special_function(DeviceIntPtr device,unsigned int key_code,
 	    xf86ProcessActionEvent(ACTION_SWITCHSCREEN,
 				   (void*) &vtno);
         }
+    }
     }
 #endif
 }
