@@ -104,9 +104,6 @@ int mi_devices;
 #endif
 
 static Bool mieqInit_device(EventQueuePtr eq);
-#if USE_SEPARATE_QUEUES
-static void push_time_to_devices(Time time);
-#endif
 
 Bool mieq_init_device_queue(DeviceIntPtr dev)
 {
@@ -699,19 +696,6 @@ mieqProcessDeviceEvent(DeviceIntPtr dev, InternalEvent *event, ScreenPtr screen)
     }
 }
 
-/* Call this from ProcessInputEvents(). */
-void
-mieqProcessInputEventsTime(Time now) /* time_max */
-{
-    mieqProcessInputEvents();
-#if MMC_PIPELINE
-    if (now)
-    {
-        push_time_to_devices(now);
-    }
-#endif
-}
-
 #if USE_SEPARATE_QUEUES
 static
 void push_time_to_devices(Time time)
@@ -840,13 +824,21 @@ void miManageQueue(EventQueuePtr eq)
 void
 mieqProcessInputEvents(void)
 {
+    mieqProcessInputEventsTime(0);
+}
+
+void
+mieqProcessInputEventsTime(Time time_max)
+{
     EventRec *e = NULL;
     ScreenPtr screen;
     static InternalEvent event; /* mmc: optimization? */
-    DeviceIntPtr dev = NULL, master = NULL;
+    DeviceIntPtr dev = NULL;
     static Bool inProcessInputEvents = FALSE;
 #if USE_SEPARATE_QUEUES
     int index;
+    Bool still_pushing_time = TRUE;
+    Time pushed_time = 0;
 #endif
 
 #ifdef XQUARTZ
@@ -877,8 +869,6 @@ mieqProcessInputEvents(void)
      *  device[i] -> first y of yyyy
      * here I would take the first of ND number-of-devices.
      * */
-    Bool still_pushing_time = TRUE;
-    Time pushed_time = 0;
     while ((index = find_first_non_empty(&e)) != -1)
     {
         EventQueuePtr eq;
@@ -901,15 +891,18 @@ mieqProcessInputEvents(void)
         // Imagine the last read (b/c of select) is from mouse,
         // and it deliveres `last_minute' events.
         // Cannot be applied to other devices!
-        ErrorF("maybe push time %lu\n", event.any.time);
-        if (still_pushing_time
-            && (time_max > event.any.time)) {
-            if (pushed_time < time_max) {
-                push_time_to_devices(time_max);
+        if (still_pushing_time) {
+            if (time_max > event.any.time) {
+                pushed_time = event.any.time;
+                push_time_to_devices(pushed_time);
+            } else {
+                still_pushing_time = FALSE;
+                /* last time: */
+                if (pushed_time < time_max) {
+                    pushed_time = time_max;
+                    push_time_to_devices(pushed_time);
+                }
             }
-            still_pushing_time = FALSE;
-        } else {
-            push_time_to_devices(event.any.time);
         }
         // push the event.
         push_event_to_device(dev, &event, screen);
@@ -944,4 +937,12 @@ mieqProcessInputEvents(void)
 #ifdef XQUARTZ
     pthread_mutex_unlock(&miEventQueueMutex);
 #endif
+
+    /* fixme: is this not necessary for !USE_SEPARATE_QUEUES ? */
+#if USE_SEPARATE_QUEUES
+    if (pushed_time < time_max) {
+        pushed_time = time_max;
+        push_time_to_devices(pushed_time);
+    }
+#endif // USE_SEPARATE_QUEUES
 }
