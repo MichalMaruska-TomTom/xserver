@@ -1342,8 +1342,10 @@ ComputeFreezes(void)
           return;
       }
 
+#if DEBUG_MMC
     ErrorF("%s%s%s: now scanning and releasing events!\n",
            event_color, __FUNCTION__, color_reset);
+#endif
     syncEvents.playingEvents = TRUE;
     /* mmc: this is only for replaying the 1 event which caused Grab */
     if (replayDev) {
