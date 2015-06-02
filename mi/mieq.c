@@ -736,6 +736,35 @@ void push_time_to_devices(Time time)
 }
 #endif // USE_SEPARATE_QUEUES
 
+static
+void push_event_to_device(DeviceIntPtr dev, InternalEvent *event, ScreenPtr screen)
+{
+    DeviceIntPtr master = NULL;
+    /* mmc: when null? */
+    master = (dev) ? GetMaster(dev, MASTER_ATTACHED) : NULL;
+
+    /* Why inside the loop?  Could the processing of 1 event take so much time? */
+    if (screenIsSaved == SCREEN_SAVER_ON)
+        dixSaveScreens(serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
+#ifdef DPMSExtension
+    else if (DPMSPowerLevel != DPMSModeOn)
+        SetScreenSaverTimer();
+
+    if (DPMSPowerLevel != DPMSModeOn)
+        DPMSSet(serverClient, DPMSModeOn);
+#endif
+
+    mieqProcessDeviceEvent(dev, event, screen);
+
+    /* Update the sprite now. Next event may be from different device. */
+    if (master &&
+        (event->any.type == ET_Motion ||
+         ((event->any.type == ET_TouchBegin ||
+           event->any.type == ET_TouchUpdate) &&
+          event->device_event.flags & TOUCH_POINTER_EMULATED)))
+        miPointerUpdateSprite(dev);
+}
+
 void
 mieqProcessInputEvents(void)
 {
@@ -789,30 +818,7 @@ mieqProcessInputEvents(void)
 #ifdef XQUARTZ
         pthread_mutex_unlock(&miEventQueueMutex);
 #endif
-
-        master = (dev) ? GetMaster(dev, MASTER_ATTACHED) : NULL;
-
-        /* Why inside the loop?  Could the processing of 1 event take so much time? */
-        if (screenIsSaved == SCREEN_SAVER_ON)
-            dixSaveScreens(serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
-#ifdef DPMSExtension
-        else if (DPMSPowerLevel != DPMSModeOn)
-            SetScreenSaverTimer();
-
-        if (DPMSPowerLevel != DPMSModeOn)
-            DPMSSet(serverClient, DPMSModeOn);
-#endif
-
-        mieqProcessDeviceEvent(dev, &event, screen);
-
-        /* Update the sprite now. Next event may be from different device. */
-        if (master &&
-            (event.any.type == ET_Motion ||
-             ((event.any.type == ET_TouchBegin ||
-               event.any.type == ET_TouchUpdate) &&
-              event.device_event.flags & TOUCH_POINTER_EMULATED)))
-            miPointerUpdateSprite(dev);
-
+        push_event_to_device(dev, &event, screen);
 #ifdef XQUARTZ
         pthread_mutex_lock(&miEventQueueMutex);
 #endif
