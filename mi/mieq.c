@@ -251,19 +251,68 @@ mieqInit_device(EventQueuePtr eq)
     return TRUE;
 }
 
+#if USE_SEPARATE_QUEUES
+static void
+drop_events(EventQueuePtr eq)
+{
+    int i;
+    for (i = 0; i < eq->nevents; i++) {
+
+        if (eq->events[i].event != NULL) {
+            FreeEventList(eq->events[i].event, 1);
+            eq->events[i].event = NULL;
+        }
+    }
+    free(eq->events);
+}
+#endif
+
 void
 mieqFini(void)
 {
-    int i;
+#if USE_SEPARATE_QUEUES
+    drop_events(&miEventQueue);
+#else
 
-    for (i = 0; i < miEventQueue.nevents; i++) {
-        if (miEventQueue.events[i].event != NULL) {
-            FreeEventList(miEventQueue.events[i].event, 1);
-            miEventQueue.events[i].event = NULL;
+#endif
+}
+
+// const DeviceIntPtr
+static int
+find_queue(DeviceIntPtr pDev)
+{
+    int i;
+    for (i=0; i< mi_devices; i++) {
+        if (devices[i] == pDev) {
+            return i;
         }
     }
-    free(miEventQueue.events);
+    return -1;
 }
+
+
+void mieq_close_device_queue(DeviceIntPtr dev)
+{
+    int i= find_queue(dev);
+    if (i== -1) {
+        ErrorF("%s: the being-closed device was not registered\n", __func__);
+        return;
+    }
+
+    ErrorF("%s: %d\n", __func__, i);
+
+    drop_events(queues[i]);
+
+    // do atomically:   (fixme: can there be an interrupt?)
+    mi_devices--;
+    if (i != mi_devices) {
+        devices[i] = devices[mi_devices];
+        queues[i] = queues[mi_devices];
+    }
+
+    // shrink the 2 arrays possibly -- todo!
+}
+
 
 /* This function will determine if the given event is allowed to used the reserved
  * queue space.
