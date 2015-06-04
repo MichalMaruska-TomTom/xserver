@@ -524,6 +524,8 @@ DisableDevice(DeviceIntPtr dev, BOOL sendevent)
 
     RecalculateMasterButtons(dev);
 
+    /* disable the mieq queue. */
+    mieq_close_device_queue(dev);
     return TRUE;
 }
 
@@ -1048,6 +1050,7 @@ CloseDownDevices(void)
             dev->master = NULL;
     }
 
+    /* fixme:  disable them first. mieq queues!! */
     CloseDeviceList(&inputInfo.devices);
     CloseDeviceList(&inputInfo.off_devices);
 
