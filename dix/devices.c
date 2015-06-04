@@ -333,6 +333,7 @@ AddInputDevice(ClientPtr client, DeviceProc deviceProc, Bool autoStart)
 
     XIRegisterPropertyHandler(dev, DeviceSetProperty, NULL, NULL);
 
+    mieq_init_device_queue(dev);
     return dev;
 }
 
@@ -434,6 +435,7 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
     /* initialise an idle timer for this device*/
     dev->idle_counter = SyncInitDeviceIdleTime(dev);
 
+    mieq_init_device_queue(dev);
     return TRUE;
 }
 
@@ -527,6 +529,8 @@ DisableDevice(DeviceIntPtr dev, BOOL sendevent)
 
     RecalculateMasterButtons(dev);
 
+    /* disable the mieq queue. */
+    mieq_close_device_queue(dev);
     return TRUE;
 }
 
@@ -1070,6 +1074,7 @@ CloseDownDevices(void)
             dev->master = NULL;
     }
 
+    /* fixme:  disable them first. mieq queues!! */
     CloseDeviceList(&inputInfo.devices);
     CloseDeviceList(&inputInfo.off_devices);
 
