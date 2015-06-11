@@ -333,7 +333,7 @@ AddInputDevice(ClientPtr client, DeviceProc deviceProc, Bool autoStart)
 
     XIRegisterPropertyHandler(dev, DeviceSetProperty, NULL, NULL);
 
-    mieq_init_device_queue(dev);
+    // mieq_init_device_queue(dev);
     return dev;
 }
 
@@ -431,6 +431,7 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
     /* initialise an idle timer for this device*/
     dev->idle_counter = SyncInitDeviceIdleTime(dev);
 
+    mieq_init_device_queue(dev);
     return TRUE;
 }
 
