@@ -336,6 +336,8 @@ AddInputDevice(ClientPtr client, DeviceProc deviceProc, Bool autoStart)
     mieq_init_device_queue(dev);
     return dev;
 }
+/* add, ActivateDevice EnableDevice */
+
 
 void
 SendDevicePresenceEvent(int deviceid, int type)
