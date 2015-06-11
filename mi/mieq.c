@@ -441,7 +441,7 @@ mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
     int i = find_queue(pDev);
 
     if (i == -1) {
-        ErrorFSigSafe("did not find the queue! DROPPING");
+        ErrorFSigSafe("did not find the queue! DROPPING\n");
     } else {
         mieqEnqueueIn(pDev, e, queues[i]);
     }
