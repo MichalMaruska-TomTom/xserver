@@ -1326,6 +1326,12 @@ xf86PostButtonEventM(DeviceIntPtr device,
                        flags, mask);
 }
 
+/* mmc:
+ * xf86PostKeyEvent  ->  VA_ version
+ * xf86PostKeyEventP ->  C array
+ *                       bit Mask ->    xf86PostKeyEventM
+ * xf86PostKeyboardEvent ->  no valuators, pure keyboard.
+ * */
 void
 xf86PostKeyEvent(DeviceIntPtr device,
                  unsigned int key_code,
@@ -1395,6 +1401,22 @@ xf86PostKeyEventM(DeviceIntPtr device,
                   unsigned int key_code,
                   int is_down, int is_absolute, const ValuatorMask *mask)
 {
+#if mmc_debug
+    ErrorF("%s: setting the time :)\n", __func__);
+#endif
+    xf86PostKeyEventMTime(device, key_code, is_down, is_absolute, mask,
+                          GetTimeInMillis());
+}
+
+void
+xf86PostKeyEventMTime(DeviceIntPtr	device,
+                       unsigned int	key_code,
+                       int		is_down,
+                       int		is_absolute,
+                       const ValuatorMask *mask,
+                       Time time)
+{
+
 #if XFreeXDGA
     DeviceIntPtr pointer;
 
@@ -1410,8 +1432,8 @@ xf86PostKeyEventM(DeviceIntPtr device,
 #endif
 
     maybe_special_function(device, key_code, is_down);
-    QueueKeyboardEvents(device,
-                        is_down ? KeyPress : KeyRelease, key_code, mask);
+    QueueKeyboardEventsTime(device,
+                            is_down ? KeyPress : KeyRelease, key_code, mask, time);
 }
 
 void
@@ -1422,6 +1444,20 @@ xf86PostKeyboardEvent(DeviceIntPtr device, unsigned int key_code, int is_down)
     valuator_mask_zero(&mask);
     xf86PostKeyEventM(device, key_code, is_down, 0, &mask);
 }
+
+/* New entry point for keyboard drivers, which provide the event's timestamp. */
+void
+xf86PostKeyboardTimeEvent(DeviceIntPtr      device,
+			  unsigned int      key_code,
+			  int               is_down,
+			  Time      time)
+{
+    ValuatorMask mask;
+
+    valuator_mask_zero(&mask);
+    xf86PostKeyEventMTime(device, key_code, is_down, 0, &mask, time);
+}
+
 
 InputInfoPtr
 xf86FirstLocalDevice(void)

@@ -155,6 +155,10 @@ extern _X_EXPORT void xf86PostKeyEventM(DeviceIntPtr device,
                                         unsigned int key_code, int is_down,
                                         int is_absolute,
                                         const ValuatorMask *mask);
+extern _X_EXPORT void xf86PostKeyEventMTime(DeviceIntPtr device,
+                                             unsigned int key_code, int is_down,
+                                            int is_absolute,
+                                             const ValuatorMask *mask, Time time);
 extern _X_EXPORT void xf86PostKeyEventP(DeviceIntPtr device,
                                         unsigned int key_code, int is_down,
                                         int is_absolute, int first_valuator,
@@ -162,6 +166,10 @@ extern _X_EXPORT void xf86PostKeyEventP(DeviceIntPtr device,
                                         const int *valuators);
 extern _X_EXPORT void xf86PostKeyboardEvent(DeviceIntPtr device,
                                             unsigned int key_code, int is_down);
+extern _X_EXPORT void xf86PostKeyboardTimeEvent(DeviceIntPtr device,
+                                                unsigned int key_code,
+                                                int is_down, Time time);
+
 extern _X_EXPORT void xf86PostTouchEvent(DeviceIntPtr dev, uint32_t touchid,
                                          uint16_t type, uint32_t flags,
                                          const ValuatorMask *mask);
