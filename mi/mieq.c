@@ -233,7 +233,7 @@ mieqInit(void)
 
     devices = NULL;
     queues = NULL;
-    return true;
+    return TRUE;
 #endif
 }
 
