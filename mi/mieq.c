@@ -75,6 +75,8 @@ typedef struct _Event {
     DeviceIntPtr pDev;          /* device this event _originated_ from */
 } EventRec, *EventPtr;
 
+
+/* mmc: keep 1 per device. allocate/deallocate as needed. */
 typedef struct _EventQueue {
     HWEventQueueType head, tail;        /* long for SetInputCheck */
     CARD32 lastEventTime;       /* to avoid time running backwards */
@@ -86,6 +88,41 @@ typedef struct _EventQueue {
 } EventQueueRec, *EventQueuePtr;
 
 static EventQueueRec miEventQueue;
+
+EventQueuePtr *queues;
+/* todo: when the device is deallocated? */
+DeviceIntPtr *devices;
+
+int mi_devices;
+#if 0
+    /* hash table */
+    struct device_queue
+    {
+        device;
+        queue;
+    };
+#endif
+
+static Bool mieqInit_device(EventQueuePtr eq);
+
+
+Bool mieq_init_device_queue(DeviceIntPtr dev)
+{
+    // mi_devices;
+    if ((devices=realloc(devices, (mi_devices + 1) * sizeof(DeviceIntPtr))) == NULL)
+        return FALSE;
+    if ((queues =realloc(queues, (mi_devices + 1) * sizeof(EventQueuePtr))) == NULL)
+        /* no worry about devices; */
+        return FALSE;
+
+    devices[mi_devices] = dev;  /* not good. */
+    queues[mi_devices] = malloc(sizeof(EventQueueRec));
+    mieqInit_device(queues[mi_devices]);
+    mi_devices++;
+    ErrorF("%s: %d\n", __func__, mi_devices);
+    return TRUE;
+}
+
 
 #ifdef XQUARTZ
 #include  <pthread.h>
@@ -188,13 +225,29 @@ mieqGrowQueue(EventQueuePtr eventQueue, size_t new_nevents)
 Bool
 mieqInit(void)
 {
-    memset(&miEventQueue, 0, sizeof(miEventQueue));
-    miEventQueue.lastEventTime = GetTimeInMillis();
+#if USE_SEPARATE_QUEUES
+    return mieqInit_device(&miEventQueue);
+#else
+    /* useless? */
+    mi_devices = 0;
 
-    if (!mieqGrowQueue(&miEventQueue, QUEUE_INITIAL_SIZE))
+    devices = NULL;
+    queues = NULL;
+    return TRUE;
+#endif
+}
+
+
+static Bool
+mieqInit_device(EventQueuePtr eq)
+{
+    memset(eq, 0, sizeof(EventQueueRec)); /* fixme: */
+    eq->lastEventTime = GetTimeInMillis();
+
+    if (!mieqGrowQueue(eq, QUEUE_INITIAL_SIZE))
         FatalError("Could not allocate event queue.\n");
 
-    SetInputCheck(&miEventQueue.head, &miEventQueue.tail);
+    SetInputCheck(&eq->head, &eq->tail);
     return TRUE;
 }
 
