@@ -698,6 +698,7 @@ mieqProcessDeviceEvent(DeviceIntPtr dev, InternalEvent *event, ScreenPtr screen)
     }
 }
 
+#if USE_SEPARATE_QUEUES
 static
 void push_time_to_devices(Time time)
 {
@@ -719,6 +720,7 @@ void push_time_to_devices(Time time)
             (*dev->public.pushTimeProc)(dev, time);
     }
 }
+#endif // USE_SEPARATE_QUEUES
 
 static
 void push_event_to_device(DeviceIntPtr dev, InternalEvent *event, ScreenPtr screen)
