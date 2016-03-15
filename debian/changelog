@@ -1,3 +1,101 @@
+xorg-server (2:1.18.2-1maruska) unstable; urgency=medium
+
+  * Extend the DIX (events) api, to accept keyboard events with timestamp.
+  * Change the default timestamp from 0 to time.
+  * Extend the Xfree86 DDX hooks to pass over the timestamp of keyboard event.
+  * Provide the default timestamp -- could have called the non-extended api.
+  * comments
+  * verbosity
+  * Extend the system of Block- and Wake-handlers, to use the "current" time.
+  * Extend MI calls, so that event processing can be related to "current time" Extend the system of Block/Wake-handlers, to use the "current" time.
+  * Use the extended (Time pushing) Wake handler, in XFree86 DDX.
+  * New methods for the Device: thawProc and pushTimeProc.
+  * use the thawProc, but also syncEvents queue.
+  * Avoid correcting event timestamps in MI, Pipeline needs precision.
+  * use pushTimeProc after processing events (in MI)
+  * Bump the Xinput ABI version -- 22 and require it.
+  * Define the necessary C structs to have a pipeline of plugins, for input devices.
+  * The pipeline infrastructure --- connection, registration of plugins.
+  * Attach the pipeline to the xkb code: Init & various protocol requests to configure the plugins.
+  * Expose ADD_PLUGIN call into (server) header file.
+  * C++ friendliness: so that the plugin can be copiled as C++ code.
+  * eventstr.h part of the SDK: for the plugin code.
+  * obsolete strange comments
+  * my comments (mieq.c)
+  * Configure: Enable use the pipeline optionally.
+  * always MMC_PIPELINE
+  * remove last_upper_bound
+  * Use the master device to look at the current xkb/pipeline timeout.
+  * auto-repeat introduction
+  * remove XKB autorepeat when pipeline used
+  * disable hardware autorepeat
+  * verbosity in AR
+  * don't enable debug AR.
+  * Use init_raw instead of init_event, for now
+  * Use/allocate the correct type of event (union).
+  * AR: use standard way for TIME_FORMAT.
+  * C style in AR
+  * fix AR -- use the non-raw event type!
+  * re-enable debugging of AR.
+  * Restore Special actions to keys (SWITCH-vt action)
+  * reduce tracing in AR.
+  * maybe_special_function only for keyboards. todo: check existence of tested keys.
+  * stop AR tracing.
+  * fixes in xkb.c: bug with requests to update with different types
+  * Fixes of off-by-one mistakes
+  * Shrink XKB tables when too much grown
+  * fix: per key repeat
+  * my comments
+  * my comments on xkb.c
+  * verbosity in XI: ProcessOtherEvent
+  * introduce Loader class, ABI version for pipeline plugins
+  * info on possible bug with key repeat --- no fix
+  * HACK: disable overwriting keymap on Device change
+  * extend loader to check ABI of input modules
+  * verbosity in xkb.c: autorepeat
+  * silence XI
+  * logging macros in dix/events
+  * colorful tracing/debugging
+  * turn off tracing grab/allow.
+  * Aware of off_devices when walking all devices....
+  * During ungrab/allow and re-grabbing, use the Event time faithfully.
+  * comments on sync replaying
+  * MonthChangedOrBadTime ... verbose & disabled
+  * tracing in ComputeFreezes.
+  * Verbosity on Grabs and AllowSome. Time printing for ProcGrabPointer is broken.
+  * Slave (hw) key events should not touch the GLOBAL TIME
+  * trailing
+  * comments & unused code
+  * Don't update the time just b/c it's noticed!
+  * flipper comments
+  * verbosity on deactivating grab (allow-event replay is culprit)
+  * Don't push event time ahead. Yet, push currentTime even in Sync play.
+  * selection.h needed in dix/windows.c ... suggestion from Debian patch (why not applied)??
+  * verbosity on why ungrab fails
+  * Do update the non-event current time.
+  * trace ComputeFreezes conditionally.
+  * trace conditionally ungrab & allowSome
+  * ignore debian product files
+  * Create a per-device mieq queue. Optional.
+  * Change the slot name to single event, not plural events.
+  * Drop the per-device event-queue, when the (input) device is disabled. New tool function: find_queue.
+  * Enqueue events by new mieqEnqueueIn for a variable queue. and use find_queue()
+  * fixlet: only MMC_PIPELINE uses the time.
+  * [half conditional] When processing mi events, we need to push_time_to_devices() to the related _master_ device.
+  * split push_event_to_device() out of mieqProcessInputEvents()
+  * comment
+  * Process the events in correct order: find_first_non_empty().
+  * Split the initial part of mieqProcessInputEvents() into miManageQueue().
+  * [bad half!] mieqProcessInputEventsTime: push only up to the max time.
+  * comment on pre-allocation of events.
+  * todo
+  * desperate fix -- cannot include xorg-server.h ?
+  * Fix: do the mieq registration on Enable, not add INputDevice.
+  * comment
+  * enable USE_SEPARATE_QUEUES
+
+ -- Michal Maruska <mmaruska@gmail.com>  Tue, 15 Mar 2016 10:02:12 +0100
+
 xorg-server (2:1.18.2-1) unstable; urgency=medium
 
   * New upstream release. (Closes: #814982)
