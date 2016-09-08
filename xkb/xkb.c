@@ -768,7 +768,9 @@ ProcXkbSetControls(ClientPtr client)
         return BadAccess;
 
     CHK_KBD_DEVICE(dev, stuff->deviceSpec, client, DixManageAccess);
-    CHK_MASK_LEGAL(0x01, stuff->changeCtrls, XkbAllControlsMask);
+    //    CHK_MASK_LEGAL(0x01, stuff->changeCtrls, XkbAllControlsMask);
+    ErrorF("%s: %lu vs %lu\n", __FUNCTION__, (unsigned long) stuff->changeCtrls,
+	   XkbPerKeyRepeatMask);
 
     for (tmpd = inputInfo.devices; tmpd; tmpd = tmpd->next) {
         if (!tmpd->key || !tmpd->key->xkbInfo)
@@ -939,6 +941,7 @@ ProcXkbSetControls(ClientPtr client)
             }
 
             if (stuff->changeCtrls & XkbPerKeyRepeatMask) {
+                ErrorF("[xkb] so copying the perKeyRepeat\n");
                 memcpy(new.per_key_repeat, stuff->perKeyRepeat,
                        XkbPerKeyBitArraySize);
                 if (xkbi->repeatKey &&
@@ -1616,10 +1619,15 @@ CheckKeyTypes(ClientPtr client,
         *nMapsRtrn = xkb->map->num_types;
         for (i = 0; i < xkb->map->num_types; i++) {
             mapWidthRtrn[i] = xkb->map->types[i].num_levels;
+	    /*
+	     * mmc:  mapWidthRtrn is allocated for max keycodes.  Is the same
+	     * limit valid for # of levels of Types???
+	     */
         }
         return 1;
     }
 
+    /* Copy the unaffected interval: */
     for (i = 0; i < req->firstType; i++) {
         mapWidthRtrn[i] = xkb->map->types[i].num_levels;
     }
@@ -1712,12 +1720,25 @@ CheckKeySyms(ClientPtr client,
              CARD8 *mapWidths,
              CARD16 *symsPerKey, xkbSymMapWireDesc ** wireRtrn, int *errorRtrn)
 {
+   /* mmc:
+    *   Checks consistency of the data:
+    *   - types inside an interval
+    *   - number of syms must be = width * ngroups
+    *   AND
+    *   constructs the symsPerKey mapping keycode->number.  This will be
+    *   used by the caller for checking n. of actions!
+    *   Uses mapWidths for that(?)
+    */
     register unsigned i;
     XkbSymMapPtr map;
     xkbSymMapWireDesc *wire = *wireRtrn;
 
+#if 0
+    /* mmc: Is this correct? symsPerKey would not be computed! */
+
     if (!(XkbKeySymsMask & req->present))
         return 1;
+#endif
     CHK_REQ_KEY_RANGE2(0x11, req->firstKeySym, req->nKeySyms, req, (*errorRtrn),
                        0);
     for (i = 0; i < req->nKeySyms; i++) {
@@ -1727,6 +1748,7 @@ CheckKeySyms(ClientPtr client,
         if (client->swapped) {
             swaps(&wire->nSyms);
         }
+        /* mmc: Checking the Nodes: 1/ good group information? */
         nG = XkbNumGroups(wire->groupInfo);
         if (nG > XkbNumKbdGroups) {
             *errorRtrn = _XkbErrCode3(0x14, i + req->firstKeySym, nG);
@@ -1761,12 +1783,16 @@ CheckKeySyms(ClientPtr client,
             *errorRtrn = _XkbErrCode3(0x17, i + req->firstKeySym, wire->nSyms);
             return 0;
         }
+        /* Go to next? Skip the record & following syms! */
         pSyms = (KeySym *) &wire[1];
         wire = (xkbSymMapWireDesc *) &pSyms[wire->nSyms];
     }
 
+    /* mmc: Keycodes `above' affected ones: */
     map = &xkb->map->key_sym_map[i];
-    for (; i <= (unsigned) xkb->max_key_code; i++, map++) {
+
+    for (i= req->nKeySyms + req->firstKeySym;i<=(unsigned)xkb->max_key_code
+             ;i++,map++) {
         register int g, nG, w;
 
         nG = XkbKeyNumGroups(xkb, i);
@@ -2096,12 +2122,16 @@ SetKeySyms(ClientPtr client,
     KeySym *pSyms;
     unsigned first, last;
 
+    ErrorF ("first %d, %d, \n", req->firstKeySym, req->nKeySyms);
     oldMap = &xkb->map->key_sym_map[req->firstKeySym];
     for (i = 0; i < req->nKeySyms; i++, oldMap++) {
         pSyms = (KeySym *) &wire[1];
+        ErrorF ("nsyms %d, %d\n", wire->nSyms, i+req->firstKeySym);
         if (wire->nSyms > 0) {
             newSyms = XkbResizeKeySyms(xkb, i + req->firstKeySym, wire->nSyms);
             for (s = 0; s < wire->nSyms; s++) {
+                ErrorF ("overwriting %lu, %lu, total %d \n", newSyms[s], pSyms[s],
+                        XkbKeyNumSyms(xkb,i+req->firstKeySym));
                 newSyms[s] = pSyms[s];
             }
             if (client->swapped) {
@@ -2178,6 +2208,10 @@ SetKeyActions(XkbDescPtr xkb,
         int oldLast;
 
         oldLast = changes->map.first_key_act + changes->map.num_key_acts - 1;
+	/*
+	 * mmc: Isn't there a function to enlarge an interval to include
+	 * 2 points?  (inverse of CLAMP)
+	 */
         if (changes->map.first_key_act < first)
             first = changes->map.first_key_act;
         if (oldLast > last)
@@ -2185,6 +2219,7 @@ SetKeyActions(XkbDescPtr xkb,
     }
     changes->map.changed |= XkbKeyActionsMask;
     changes->map.first_key_act = first;
+    /* mmc: why not simply  req->nKeyActs*/
     changes->map.num_key_acts = (last - first + 1);
     return (char *) wire;
 }
@@ -2285,6 +2320,7 @@ SetKeyExplicit(XkbSrvInfoPtr xkbi, xkbSetMapReq * req, CARD8 *wire,
         xkb->explicit[wire[0]] = wire[1];
     }
     if (first > 0) {
+        /* don't we set it? */
         if (changes->map.changed & XkbExplicitComponentsMask) {
             int oldLast;
 
@@ -2406,8 +2442,9 @@ _XkbSetMapChecks(ClientPtr client, DeviceIntPtr dev, xkbSetMapReq * req,
         }
     }
 
-    if ((req->present & XkbKeyTypesMask) &&
-        (!CheckKeyTypes(client, xkb, req, (xkbKeyTypeWireDesc **) &values,
+    /* Bug: We need `mapWidths' which is calculated in CheckKeyTypes. */
+    if (/* (req->present & XkbKeyTypesMask) && */
+        (!CheckKeyTypes(client, xkb, req, (xkbKeyTypeWireDesc **) & values,
                         &nTypes, mapWidths))) {
         client->errorValue = nTypes;
         return BadValue;
@@ -6771,6 +6808,7 @@ ProcXkbDispatch(ClientPtr client)
 {
     REQUEST(xReq);
     switch (stuff->data) {
+    /* mmc: is this req->xkbReqType ? */
     case X_kbUseExtension:
         return ProcXkbUseExtension(client);
     case X_kbSelectEvents:

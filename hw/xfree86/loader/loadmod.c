@@ -615,6 +615,12 @@ CheckVersion(const char *module, XF86ModuleVersionInfo * data,
             ver = LoaderVersionInfo.extensionVersion;
         else if (!strcmp(data->abiclass, ABI_CLASS_FONT))
             ver = LoaderVersionInfo.fontVersion;
+#if 0
+	/* mmc: todo! */
+	else if (!strcmp(data->abiclass, ABI_CLASS_INPUT))
+	    ver = LoaderVersionInfo.inputVersion;
+#endif
+
 
         abimaj = GET_ABI_MAJOR(data->abiversion);
         abimin = GET_ABI_MINOR(data->abiversion);
