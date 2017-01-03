@@ -94,6 +94,14 @@ EventQueuePtr *queues;
 DeviceIntPtr *devices;
 
 int mi_devices;                 /* number of mi devices */
+#if 0
+    /* hash table */
+    struct device_queue
+    {
+        device;
+        queue;
+    };
+#endif
 
 static Bool mieqInit_device(EventQueuePtr eq);
 
