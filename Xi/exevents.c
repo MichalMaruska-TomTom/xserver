@@ -1716,6 +1716,17 @@ ProcessDeviceEvent(InternalEvent *ev, DeviceIntPtr device)
 #if 0
     ErrorF("%s: %s %s\n", __FUNCTION__, device->name, event_names[ev->any.type - 2 ]);
 #endif
+#if 0
+    if (ev->any.type == ET_RawKeyPress ||
+        ev->any.type == ET_RawKeyRelease ||
+        ev->any.type == ET_RawButtonPress ||
+        ev->any.type == ET_RawButtonRelease ||
+        ev->any.type == ET_RawMotion) {
+        ProcessRawEvent(&ev->raw_event, device);
+        return;
+    }
+#endif
+
     if (IsPointerDevice(device)) {
         kbd = GetMaster(device, KEYBOARD_OR_FLOAT);
         mouse = device;
