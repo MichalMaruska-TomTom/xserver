@@ -60,6 +60,7 @@ confflags_main = \
 	--enable-xephyr \
 	--with-sha1=libgcrypt \
 	--enable-xcsecurity \
+	--enable-pipeline \
 	$(void)
 
 confflags_udeb = \
