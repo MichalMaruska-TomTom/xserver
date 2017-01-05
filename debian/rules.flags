@@ -93,6 +93,7 @@ confflags_udeb = \
 	--disable-kdrive \
 	--disable-xephyr \
 	--with-sha1=libnettle \
+	--enable-pipeline \
 	$(void)
 
 ifeq ($(DEB_HOST_ARCH_OS), linux)
