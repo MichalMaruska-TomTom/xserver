@@ -3207,6 +3207,7 @@ dixSaveScreens(ClientPtr client, int on, int mode)
         if (on == SCREEN_SAVER_FORCER) {
             DeviceIntPtr dev;
             UpdateCurrentTimeIf();
+            /* what is this? time on all devices pushed to currentTime.  */
             nt_list_for_each_entry(dev, inputInfo.devices, next)
                 NoticeTime(dev, currentTime);
         }
