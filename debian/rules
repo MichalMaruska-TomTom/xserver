@@ -163,6 +163,7 @@ confflags_udeb = \
 	--disable-xnest \
 	--disable-kdrive \
 	--disable-xephyr \
+	--enable-pipeline \
 	--with-sha1=libnettle \
 	$(void)
 
