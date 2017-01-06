@@ -183,12 +183,14 @@ freeze_queue_init(DeviceIntPtr dev, DevicePluginRec* plugin_class)
 
 DevicePluginRec queue_plugin =
 {
-    "never-freeze-queue",
-    freeze_queue_init,
-    queue_process_key_event,
-    queue_accept_time,
-    queue_thaw,
+    .name = "never-freeze-queue",
+    .instantiate = freeze_queue_init,
+    .ProcessEvent = queue_process_key_event,
+    .ProcessTime = queue_accept_time,
+    .NotifyThaw = queue_thaw,
+#if 0
     NULL, NULL,                        /* config */
     NULL,
     NULL,
+#endif
 };
