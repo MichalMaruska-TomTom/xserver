@@ -157,8 +157,6 @@ set_timeout(void *blockData, void *timeoutData, Time now)
     }
 }
 
-
-
 /*
  * given plugins/processors A and B, such that:
  *

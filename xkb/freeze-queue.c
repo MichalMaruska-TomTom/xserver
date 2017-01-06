@@ -3,7 +3,7 @@
  * Queue processor: implements the replacement of syncEvents */
 
 #ifdef HAVE_DIX_CONFIG_H
-#include <dix-config.h>
+# include <dix-config.h>
 #endif
 
 #include "pipeline.h"
@@ -18,11 +18,8 @@
 #include <eventstr.h>
 
 #include "xkb.h"
-
-
 #include "list.h"
 
-#define TIME_FORMAT "%lu"
 typedef struct
 {
     // so now QdEventPtr is meant to be used inside Doubly-linked list.
@@ -31,8 +28,6 @@ typedef struct
      * the event queue). */
     Time		time;
 } queue_data;
-
-
 
 #if (DEBUG_PIPELINE && 0)
 /* return the count of events in event_list */
@@ -46,8 +41,7 @@ queue_count_events(queue_data* event_list)
         i++;
     return i;
 }
-#endif	/* DEBUG_PIPELINE */
-
+#endif  /* DEBUG_PIPELINE */
 
 /**
  * append to the end of linked list
@@ -70,7 +64,6 @@ queue_append(queue_data *data, InternalEvent *ev, Bool owner)
 
     if (owner)
         free(event);
-
 }
 
 static void
@@ -88,11 +81,9 @@ queue_process_key_event(PluginInstance* plugin, InternalEvent *event, Bool owner
     }
 }
 
-
 static void
 queue_accept_time(PluginInstance* plugin, Time time)
 {
-
     PluginInstance* next = plugin->next;
     assert(next);
 
