@@ -1,5 +1,5 @@
 /* (c) 2004-2010 Michal Maruska <mmaruska@gmail.com>
- * 
+ *
  * Pipeline invocation
  */
 
@@ -26,8 +26,6 @@
 #include "inputstr.h"
 #include <events.h>
 #include <eventstr.h>
-
-
 
 #define DEBUG_timeout 0         /* block handler */
 #define DEBUG 0
