@@ -13,7 +13,7 @@
 /* If I could get the repeat-rate w/o using XKB... */
 
 /* 1 important, 2 burocracy, 4 all invocations; full: (1 | 2 | 4) */
-#define DEBUG_AUTOREPEAT (1)
+#define DEBUG_AUTOREPEAT (7)
 
 #include <X11/extensions/XKBsrv.h>
 

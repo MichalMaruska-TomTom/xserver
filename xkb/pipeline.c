@@ -150,6 +150,7 @@ set_timeout(void *blockData, void *timeoutData, Time now)
             master->pipeline->wakeup_time - now;
 
         if ( *(int*)timeout == -1 || *(int*)timeout == 0 || deviceTimeout < *timeout) {
+            ErrorF("%s: requesting wakeup time %u\n", __func__, deviceTimeout);
             // calculate our timeout, and if lesser, then propagate:
             *timeout = deviceTimeout;
         }
