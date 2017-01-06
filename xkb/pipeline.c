@@ -27,8 +27,7 @@
 #include <events.h>
 #include <eventstr.h>
 
-#define DEBUG_timeout 0         /* block handler */
-#define DEBUG 0
+#define DEBUG_timeout 1         /* block handler */
 
 #define XKBSRV_NEED_FILE_FUNCS
 #define XKB_IN_SERVER 1

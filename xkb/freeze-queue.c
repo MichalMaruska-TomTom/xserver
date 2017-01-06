@@ -72,12 +72,15 @@ queue_process_key_event(PluginInstance* plugin, InternalEvent *event, Bool owner
 //    CHECKEVENT(event);
     if (plugin_frozen(plugin->next))
     {
+        ErrorF("%s: frozen!\n", __func__);
         queue_append(plugin->data, event, owner);
         plugin->wakeup_time = 0;
     } else {
+        ErrorF("%s: pushing to next!\n", __func__);
         PluginClass(plugin->next)->ProcessEvent(plugin->next, event, owner);
         /* this plugin is not interested in time */
         plugin->wakeup_time = plugin->next->wakeup_time;
+        ErrorF("%s: wakeup time %u!\n", __func__, plugin->wakeup_time);
     }
 }
 
@@ -97,8 +100,10 @@ queue_accept_time(PluginInstance* plugin, Time time)
         if (plugin_frozen(next)) {
             ((queue_data*)plugin->data)->time = time;
         }
-    } else
+    } else {
+        ErrorF("%s: not frozen, yet ...!\n", __func__);
         plugin->wakeup_time = 0;
+    }
 }
 
 
