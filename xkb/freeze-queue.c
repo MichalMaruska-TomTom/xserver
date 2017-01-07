@@ -20,6 +20,15 @@
 #include "xkb.h"
 #include "list.h"
 
+// gettid
+#include <sys/syscall.h>
+#include <unistd.h>
+
+long gettid()
+{
+  return syscall(SYS_gettid);
+}
+
 typedef struct
 {
     // so now QdEventPtr is meant to be used inside Doubly-linked list.
@@ -91,7 +100,7 @@ queue_accept_time(PluginInstance* plugin, Time time)
     assert(next);
 
     if (!plugin_frozen(next)) {
-        ErrorF("%s:\n", __func__);
+        ErrorF("%s: %d\n", __func__, gettid());
 
         if (next->wakeup_time && (next->wakeup_time <= time)) {
             PluginClass(next)->ProcessTime(next, time);

@@ -475,6 +475,7 @@ ar_process_key_event(PluginInstance* plugin,
    ar_finish(plugin);
 }
 
+extern long gettid();
 
 static void
 ar_accept_time(PluginInstance* plugin, Time time)
@@ -487,7 +488,9 @@ ar_accept_time(PluginInstance* plugin, Time time)
     /* when could it be frozen? actively grabbed. we don't get any signal
      * about such events! */
 #if DEBUG_AUTOREPEAT & 4
-    ErrorF("%s: %s %" TIME_FORMAT "\n", __FUNCTION__, plugin->device->name, time);
+    ErrorF("%s: %d %s %" TIME_FORMAT "\n", __FUNCTION__,
+           gettid(),
+           plugin->device->name, time);
 #endif
     if (! plugin_frozen(plugin->next)) {
         ar_push_events(plugin, time);
