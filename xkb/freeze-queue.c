@@ -91,6 +91,8 @@ queue_accept_time(PluginInstance* plugin, Time time)
     assert(next);
 
     if (!plugin_frozen(next)) {
+        ErrorF("%s:\n", __func__);
+
         if (next->wakeup_time && (next->wakeup_time <= time)) {
             PluginClass(next)->ProcessTime(next, time);
             plugin->wakeup_time = next->wakeup_time;
