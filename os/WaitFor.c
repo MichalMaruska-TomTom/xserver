@@ -195,7 +195,7 @@ WaitForSomething(Bool are_ready)
 
         timeout = check_timers(now);
         if (are_ready)
-            timeout = 0;
+            timeout = -1; // fixme: was 0
 
         BlockHandler(&timeout, now);
         if (NewOutputPending)
