@@ -386,7 +386,8 @@ BlockHandler(void *pTimeout, Time now)
     int i, j;
 
     ++inHandler;
-    for (i = 0; i < numHandlers; i++)
+    // if (pTimeout == 0)
+    for (i = 0; i < numHandlers; i++) {
         if (!handlers[i].deleted)
             if (handlers[i].wantsTime) {
                 (* (TimeBlockHandlerProcPtr) handlers[i].BlockHandler)
@@ -395,6 +396,11 @@ BlockHandler(void *pTimeout, Time now)
                 /* These don't use the NOW argument */
                 (*handlers[i].BlockHandler) (handlers[i].blockData, pTimeout);
             }
+        if (*(int*)pTimeout == 0) {
+            ErrorF("%s: already at 0\n", __func__);
+        }
+    }
+
     for (i = 0; i < screenInfo.numGPUScreens; i++)
         (*screenInfo.gpuscreens[i]->BlockHandler) (screenInfo.gpuscreens[i], pTimeout);
 

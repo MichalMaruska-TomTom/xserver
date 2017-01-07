@@ -145,12 +145,17 @@ set_timeout(void *blockData, void *timeoutData, Time now)
 
     const DeviceIntPtr master = (keybd) ? GetMaster(keybd, MASTER_ATTACHED) : NULL;
 
+    if ( *(int*)timeout == 0)
+        ErrorF("%s: already timeout 0\n", __func__);
+
     if ((timeout) && master && (master->pipeline->wakeup_time != 0)) { /* 0 - no timeout! */
+
+        // hm, fixme:  0 should be respected! and it's NOT!
         Time deviceTimeout = (master->pipeline->wakeup_time <= now)? 0 :
             master->pipeline->wakeup_time - now;
 
-        if ( *(int*)timeout == -1 || *(int*)timeout == 0 || deviceTimeout < *timeout) {
-            ErrorF("%s: requesting wakeup time %u\n", __func__, deviceTimeout);
+        if ( *(int*)timeout == -1 || deviceTimeout < *timeout) {
+            ErrorF("%s: requesting wakeup time @ %u: %u\n", __func__, now, deviceTimeout);
             // calculate our timeout, and if lesser, then propagate:
             *timeout = deviceTimeout;
         }
