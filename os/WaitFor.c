@@ -210,7 +210,7 @@ WaitForSomething(Bool are_ready)
         }
 
         if (are_ready)
-            timeout = 0;
+            timeout = -1; // fixme: was 0
         else
             timeout = check_timers(now);
 
