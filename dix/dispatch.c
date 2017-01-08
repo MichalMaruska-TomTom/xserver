@@ -176,6 +176,7 @@ volatile char isItTimeToYield;
 #define SAME_SCREENS(a, b) (\
     (a.pScreen == b.pScreen))
 
+/* mmc: what is this HWEventQueue ? */
 void
 SetInputCheck(HWEventQueuePtr c0, HWEventQueuePtr c1)
 {
@@ -183,9 +184,16 @@ SetInputCheck(HWEventQueuePtr c0, HWEventQueuePtr c1)
     checkForInput[1] = c1;
 }
 
+/* updates the notion of time, independent of events!!!
+ * Just from the clock! */
 void
 UpdateCurrentTime(void)
 {
+#if 1
+    if (*checkForInput[0] != *checkForInput[1])
+        ProcessInputEvents();
+
+#else
     TimeStamp systime;
 
     /* To avoid time running backwards, we must call GetTimeInMillis before
@@ -197,22 +205,36 @@ UpdateCurrentTime(void)
         systime.months++;
     if (InputCheckPending())
         ProcessInputEvents();
-    if (CompareTimeStamps(systime, currentTime) == LATER)
-        currentTime = systime;
+#if mmc_debug
+    if (CompareTimeStamps(systime, currentTime) == LATER) {
+        ErrorF("%s: %u->%u\n", __FUNCTION__, currentTime.milliseconds,
+               systime.milliseconds);
+	// currentTime = systime;
+    }
+#endif
+#endif
 }
 
 /* Like UpdateCurrentTime, but can't call ProcessInputEvents */
+/* mmc: update currentTime, handling wrap-over.  */
 void
 UpdateCurrentTimeIf(void)
 {
     TimeStamp systime;
-
     systime.months = currentTime.months;
     systime.milliseconds = GetTimeInMillis();
     if (systime.milliseconds < currentTime.milliseconds)
         systime.months++;
-    if (CompareTimeStamps(systime, currentTime) == LATER)
-        currentTime = systime;
+    if (CompareTimeStamps(systime, currentTime) == LATER) {
+#if mmc_debug
+        ErrorF("%s: %u->%u\n", __FUNCTION__, currentTime.milliseconds,
+               systime.milliseconds);
+#endif
+        /* I wanted to keep the time of last event processed.
+         * Because events can come from `past' which is bad.
+         * So basically this is per-device. Should be  InputDeviceTime..... */
+	currentTime = systime;
+    }
 }
 
 #undef SMART_DEBUG

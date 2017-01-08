@@ -70,11 +70,14 @@ in this Software without prior written authorization from The Open Group.
 #define DequeueScreen(dev) dev->spriteInfo->sprite->pDequeueScreen
 
 typedef struct _Event {
-    InternalEvent *events;
+    InternalEvent *event;
     ScreenPtr pScreen;
     DeviceIntPtr pDev;          /* device this event _originated_ from */
 } EventRec, *EventPtr;
 
+
+#define USE_SEPARATE_QUEUES 1
+/* mmc: keep 1 per device. allocate/deallocate as needed. */
 typedef struct _EventQueue {
     HWEventQueueType head, tail;        /* long for SetInputCheck */
     CARD32 lastEventTime;       /* to avoid time running backwards */
@@ -86,6 +89,44 @@ typedef struct _EventQueue {
 } EventQueueRec, *EventQueuePtr;
 
 static EventQueueRec miEventQueue;
+
+EventQueuePtr *queues;
+/* todo: when the device is deallocated? */
+DeviceIntPtr *devices;
+
+int mi_devices;                 /* number of mi devices */
+#if 0
+    /* hash table */
+    struct device_queue
+    {
+        device;
+        queue;
+    };
+#endif
+
+static Bool mieqInit_device(EventQueuePtr eq);
+
+#if USE_SEPARATE_QUEUES
+static void push_time_to_devices(Time time);
+#endif
+
+/* return FALSE on failure. Otherwise allocate in the arrays for @dev. */
+Bool mieq_init_device_queue(DeviceIntPtr dev)
+{
+    if ((devices = realloc(devices, (mi_devices + 1) * sizeof(DeviceIntPtr))) == NULL)
+        return FALSE;
+    if ((queues = realloc(queues, (mi_devices + 1) * sizeof(EventQueuePtr))) == NULL)
+        /* no worry about devices; */
+        return FALSE;
+    devices[mi_devices] = dev;  /* not good. */
+    queues[mi_devices] = malloc(sizeof(EventQueueRec));
+    if (!queues[mi_devices])
+        FatalError("Could not allocate event queue.\n");
+    mieqInit_device(queues[mi_devices]);
+    mi_devices++;
+    ErrorF("%s: %d\n", __func__, mi_devices);
+    return TRUE;
+}
 
 static size_t
 mieqNumEnqueued(EventQueuePtr eventQueue)
@@ -134,17 +175,17 @@ mieqGrowQueue(EventQueuePtr eventQueue, size_t new_nevents)
 
     /* Initialize the new portion */
     for (i = eventQueue->nevents; i < new_nevents; i++) {
-        InternalEvent *evlist = InitEventList(1);
+        InternalEvent *evlist = InitEventList(1); /* pre-allocation! */
 
         if (!evlist) {
             size_t j;
 
             for (j = 0; j < i; j++)
-                FreeEventList(new_events[j].events, 1);
+                FreeEventList(new_events[j].event, 1);
             free(new_events);
             return FALSE;
         }
-        new_events[i].events = evlist;
+        new_events[i].event = evlist;
     }
 
     /* And update our record */
@@ -160,30 +201,93 @@ mieqGrowQueue(EventQueuePtr eventQueue, size_t new_nevents)
 Bool
 mieqInit(void)
 {
-    memset(&miEventQueue, 0, sizeof(miEventQueue));
-    miEventQueue.lastEventTime = GetTimeInMillis();
+#if USE_SEPARATE_QUEUES
+    return mieqInit_device(&miEventQueue);
+#else
+    /* useless? */
+    mi_devices = 0;
+
+    devices = NULL;
+    queues = NULL;
+    return TRUE;
+#endif
+}
+
+
+static Bool
+mieqInit_device(EventQueuePtr eq)
+{
+    memset(eq, 0, sizeof(EventQueueRec)); /* fixme: */
+    eq->lastEventTime = GetTimeInMillis();
 
     input_lock();
-    if (!mieqGrowQueue(&miEventQueue, QUEUE_INITIAL_SIZE))
+    if (!mieqGrowQueue(eq, QUEUE_INITIAL_SIZE))
         FatalError("Could not allocate event queue.\n");
     input_unlock();
 
-    SetInputCheck(&miEventQueue.head, &miEventQueue.tail);
+    SetInputCheck(&eq->head, &eq->tail);
     return TRUE;
 }
+
+#if USE_SEPARATE_QUEUES
+static void
+drop_events(EventQueuePtr eq)
+{
+    int i;
+    for (i = 0; i < eq->nevents; i++) {
+
+        if (eq->events[i].event != NULL) {
+            FreeEventList(eq->events[i].event, 1);
+            eq->events[i].event = NULL;
+        }
+    }
+    free(eq->events);
+}
+#endif
 
 void
 mieqFini(void)
 {
-    int i;
+#if USE_SEPARATE_QUEUES
+    drop_events(&miEventQueue);
+#else
 
-    for (i = 0; i < miEventQueue.nevents; i++) {
-        if (miEventQueue.events[i].events != NULL) {
-            FreeEventList(miEventQueue.events[i].events, 1);
-            miEventQueue.events[i].events = NULL;
+#endif
+}
+
+// const DeviceIntPtr
+static int
+find_queue(DeviceIntPtr pDev)
+{
+    int i;
+    for (i=0; i< mi_devices; i++) {
+        if (devices[i] == pDev) {
+            return i;
         }
     }
-    free(miEventQueue.events);
+    return -1;
+}
+
+void mieq_close_device_queue(DeviceIntPtr dev)
+{
+    int i= find_queue(dev);
+    if (i== -1) {
+        ErrorF("%s: the being-closed device was not registered\n", __func__);
+        return;
+    }
+
+    ErrorF("%s: %d\n", __func__, i);
+
+    drop_events(queues[i]);
+
+    // do atomically:   (fixme: can there be an interrupt?)
+    mi_devices--;
+    if (i != mi_devices) {
+        devices[i] = devices[mi_devices];
+        queues[i] = queues[mi_devices];
+    }
+
+    // shrink the 2 arrays possibly -- todo!
 }
 
 /*
@@ -191,35 +295,34 @@ mieqFini(void)
  * will never be interrupted. Must be called with input_lock held
  */
 
-void
-mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
+static void
+mieqEnqueueIn(DeviceIntPtr pDev, InternalEvent *e, EventQueuePtr eq)
 {
-    unsigned int oldtail = miEventQueue.tail;
+    unsigned int oldtail = eq->tail;
     InternalEvent *evt;
     int isMotion = 0;
     int evlen;
-    Time time;
     size_t n_enqueued;
 
     verify_internal_event(e);
 
-    n_enqueued = mieqNumEnqueued(&miEventQueue);
+    n_enqueued = mieqNumEnqueued(eq);
 
     /* avoid merging events from different devices */
     if (e->any.type == ET_Motion)
         isMotion = pDev->id;
 
-    if (isMotion && isMotion == miEventQueue.lastMotion &&
-        oldtail != miEventQueue.head) {
-        oldtail = (oldtail - 1) % miEventQueue.nevents;
+    if (isMotion && isMotion == eq->lastMotion &&
+        oldtail != eq->head) {
+        oldtail = (oldtail - 1) % eq->nevents;
     }
-    else if (n_enqueued + 1 == miEventQueue.nevents) {
-        if (!mieqGrowQueue(&miEventQueue, miEventQueue.nevents << 1)) {
+    else if (n_enqueued + 1 == eq->nevents) {
+        if (!mieqGrowQueue(&miEventQueue, eq->nevents << 1)) {
             /* Toss events which come in late.  Usually this means your server's
              * stuck in an infinite loop in the main thread.
              */
-            miEventQueue.dropped++;
-            if (miEventQueue.dropped == 1) {
+            eq->dropped++;
+            if (eq->dropped == 1) {
                 ErrorFSigSafe("[mi] EQ overflowing.  Additional events will be "
                               "discarded until existing events are processed.\n");
                 xorg_backtrace();
@@ -227,12 +330,12 @@ mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
                               "a culprit higher up the stack.\n");
                 ErrorFSigSafe("[mi] mieq is *NOT* the cause.  It is a victim.\n");
             }
-            else if (miEventQueue.dropped % QUEUE_DROP_BACKTRACE_FREQUENCY == 0 &&
-                     miEventQueue.dropped / QUEUE_DROP_BACKTRACE_FREQUENCY <=
+            else if (eq->dropped % QUEUE_DROP_BACKTRACE_FREQUENCY == 0 &&
+                     eq->dropped / QUEUE_DROP_BACKTRACE_FREQUENCY <=
                      QUEUE_DROP_BACKTRACE_MAX) {
                 ErrorFSigSafe("[mi] EQ overflow continuing.  %zu events have been "
-                              "dropped.\n", miEventQueue.dropped);
-                if (miEventQueue.dropped / QUEUE_DROP_BACKTRACE_FREQUENCY ==
+                              "dropped.\n", eq->dropped);
+                if (eq->dropped / QUEUE_DROP_BACKTRACE_FREQUENCY ==
                     QUEUE_DROP_BACKTRACE_MAX) {
                     ErrorFSigSafe("[mi] No further overflow reports will be "
                                   "reported until the clog is cleared.\n");
@@ -245,22 +348,50 @@ mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
     }
 
     evlen = e->any.length;
-    evt = miEventQueue.events[oldtail].events;
+    evt = eq->events[oldtail].event; /* so it's pre-allocated? */
     memcpy(evt, e, evlen);
 
-    time = e->any.time;
+#if !MMC_PIPELINE
+    /* I don't want any arbitrary changes to the event timestamps.
+       So skip this.
+       This ensures that events from DIfferent devices have monotonic
+       time --- but it's fake, the sequence might be different.
+       after some processing, those events join in the DIX. There
+       we equalize them again. So what is the gain here?
+    */
+
     /* Make sure that event times don't go backwards - this
      * is "unnecessary", but very useful. */
-    if (time < miEventQueue.lastEventTime &&
-        miEventQueue.lastEventTime - time < 10000)
-        e->any.time = miEventQueue.lastEventTime;
+    if (e->any.time < eq->lastEventTime &&
+        eq->lastEventTime - time < 10000)
+        e->any.time = eq->lastEventTime;
+#endif
 
-    miEventQueue.lastEventTime = evt->any.time;
-    miEventQueue.events[oldtail].pScreen = pDev ? EnqueueScreen(pDev) : NULL;
-    miEventQueue.events[oldtail].pDev = pDev;
+    eq->lastEventTime = evt->any.time;
+    eq->events[oldtail].pScreen = pDev ? EnqueueScreen(pDev) : NULL;
+    eq->events[oldtail].pDev = pDev;
 
     miEventQueue.lastMotion = isMotion;
     miEventQueue.tail = (oldtail + 1) % miEventQueue.nevents;
+    eq->lastMotion = isMotion;
+    eq->tail = (oldtail + 1) % eq->nevents;
+}
+
+void
+mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
+{
+    /* find the right queue. */
+#if USE_SEPARATE_QUEUES
+    int i = find_queue(pDev);
+
+    if (i == -1) {
+        ErrorFSigSafe("did not find the queue! DROPPING\n");
+    } else {
+        mieqEnqueueIn(pDev, e, queues[i]);
+    }
+#else
+    mieqEnqueueIn(pDev, e, &miEventQueue);
+#endif
 }
 
 /**
@@ -497,21 +628,161 @@ mieqProcessDeviceEvent(DeviceIntPtr dev, InternalEvent *event, ScreenPtr screen)
     }
 }
 
-/* Call this from ProcessInputEvents(). */
-void
-mieqProcessInputEventsTime(Time now)
+#if USE_SEPARATE_QUEUES
+static
+void push_time_to_devices(Time time)
 {
-    mieqProcessInputEvents();
+    int i;
+    DeviceIntPtr dev;
+    /* I need to push to master! */
+#if DEBUG
+    ErrorF("pushing time %" PRIu64 "\n", (unsigned long) time);
+#endif
+    for (i=0; i< mi_devices; i++) {
+        DeviceIntPtr master = NULL;
+        dev = devices[i];
+        /* mmc: when null? */
+        master = (dev) ? GetMaster(dev, MASTER_ATTACHED) : NULL;
+        dev = master;
+
+        if ((dev && dev->public.pushTimeProc)
+            && (dev->time < time)) /* no fresh event */
+            (*dev->public.pushTimeProc)(dev, time);
+    }
+}
+#endif // USE_SEPARATE_QUEUES
+
+static
+void push_event_to_device(DeviceIntPtr dev, InternalEvent *event, ScreenPtr screen)
+{
+    DeviceIntPtr master = NULL;
+
+    master = (dev) ? GetMaster(dev, MASTER_ATTACHED) : NULL;
+
+    /* Why inside the loop?  Could the processing of 1 event take so much time? */
+    if (screenIsSaved == SCREEN_SAVER_ON)
+        dixSaveScreens(serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
+#ifdef DPMSExtension
+    else if (DPMSPowerLevel != DPMSModeOn)
+        SetScreenSaverTimer();
+
+    if (DPMSPowerLevel != DPMSModeOn)
+        DPMSSet(serverClient, DPMSModeOn);
+#endif
+
+    mieqProcessDeviceEvent(dev, event, screen);
+
+    /* Update the sprite now. Next event may be from different device. */
+    if (master &&
+        (event->any.type == ET_Motion ||
+         ((event->any.type == ET_TouchBegin ||
+           event->any.type == ET_TouchUpdate) &&
+          event->device_event.flags & TOUCH_POINTER_EMULATED)))
+        miPointerUpdateSprite(dev);
+}
+
+/*  so which one first?
+ *  every device ... as on the DIX side, is awaiting events, and time.
+ *  so, we take the earliest event, and possibly Push the time on all.
+ *  then we push the event.
+ *  so:  time - event - time - event ....
+ *
+ */
+#if USE_SEPARATE_QUEUES
+/**< Time in ms. */
+
+static inline
+int EVENT_EARLIER(Time time, Time time_b)
+{
+    return (time < time_b);
+}
+
+
+/* return the index of the queue. Needs the mutex.
+ * returns -1 if none. */
+static
+int find_first_non_empty(EventRec **ret_event)
+{
+    int i;
+    int earliest = -1;
+    EventQueueRec const *eq;           /* const */
+    EventRec *earliestEvent = NULL;
+    EventRec *e = NULL;
+    for (i=0; i< mi_devices; i++) {
+        eq = queues[i];
+
+        if (eq->head != eq->tail) {
+            e = &eq->events[eq->head];
+            if (!earliestEvent
+                || (EVENT_EARLIER(e->event->any.time, earliestEvent->event->any.time))) {
+                earliest = i;
+                earliestEvent = e;
+            }
+        }
+    }
+
+    *ret_event = earliestEvent;
+    return earliest;
+}
+#endif // USE_SEPARATE_QUEUES
+
+
+static
+void miManageQueue(EventQueuePtr eq)
+{
+    size_t n_enqueued;
+
+    // new:
+    if (eq->dropped) {
+        ErrorF("[mi] EQ processing has resumed after %lu dropped events.\n",
+               (unsigned long) eq->dropped);
+        ErrorF
+            ("[mi] This may be caused by a misbehaving driver monopolizing the server's resources.\n");
+        eq->dropped = 0;
+    }
+    return;
+
+    // old:
+    /* Grow our queue if we are reaching capacity: < 2 * QUEUE_RESERVED_SIZE remaining */
+    n_enqueued = mieqNumEnqueued(eq);
+    if (n_enqueued >= (eq->nevents - (2 * QUEUE_RESERVED_SIZE)) &&
+        eq->nevents < QUEUE_MAXIMUM_SIZE) {
+        ErrorF("[mi] Increasing EQ size to %lu to prevent dropped events.\n",
+               (unsigned long) (eq->nevents << 1));
+        if (!mieqGrowQueue(eq, eq->nevents << 1)) {
+            ErrorF("[mi] Increasing the size of EQ failed.\n");
+        }
+    }
+
+    /* report dropped */
+    if (eq->dropped) {
+        ErrorF("[mi] EQ processing has resumed after %lu dropped events.\n",
+               (unsigned long) eq->dropped);
+        ErrorF("[mi] This may be caused by a misbehaving driver monopolizing the server's resources.\n");
+        miEventQueue.dropped = 0;
+        eq->dropped = 0;
+    }
 }
 
 void
 mieqProcessInputEvents(void)
 {
+    mieqProcessInputEventsTime(0);
+}
+
+void
+mieqProcessInputEventsTime(Time time_max)
+{
     EventRec *e = NULL;
     ScreenPtr screen;
-    InternalEvent event;
-    DeviceIntPtr dev = NULL, master = NULL;
+    static InternalEvent event; /* mmc: optimization? */
+    DeviceIntPtr dev = NULL;
     static Bool inProcessInputEvents = FALSE;
+#if USE_SEPARATE_QUEUES
+    int index;
+    Bool still_pushing_time = TRUE;
+    Time pushed_time = 0;
+#endif
 
     input_lock();
 
@@ -523,51 +794,95 @@ mieqProcessInputEvents(void)
     BUG_WARN_MSG(inProcessInputEvents, "[mi] mieqProcessInputEvents() called recursively.\n");
     inProcessInputEvents = TRUE;
 
-    if (miEventQueue.dropped) {
-        ErrorF("[mi] EQ processing has resumed after %lu dropped events.\n",
-               (unsigned long) miEventQueue.dropped);
-        ErrorF
-            ("[mi] This may be caused by a misbehaving driver monopolizing the server's resources.\n");
-        miEventQueue.dropped = 0;
+    // mmc:
+    miManageQueue(&miEventQueue);
+
+#if USE_SEPARATE_QUEUES
+
+    /* mmc: take the one with earliest timestamp:
+     * could be:
+     * xxxx yyyyy  ||  xxxx yyyy
+     * mmc: I want to have separate queues ....
+     *
+     *while (1) { find ; if !found  break; process }
+     * So, first I want to know how many events
+     * how many generations -- reads ?
+     * do we even select() when this queue is non-empty?
+     *  device[i] -> first y of yyyy
+     * here I would take the first of ND number-of-devices.
+     * */
+    while ((index = find_first_non_empty(&e)) != -1)
+    {
+        EventQueuePtr eq;
+
+        event = *e->event;
+        dev = devices[index]; //  e->pDev;
+        screen = e->pScreen;
+
+        /* remove from the queue: */
+        eq = queues[index];
+        eq->head = (eq->head + 1) % eq->nevents;
+
+        /* now can unlock: */
+#ifdef XQUARTZ
+        pthread_mutex_unlock(&miEventQueueMutex);
+#endif
+        // unfortunately there is still a problem inside the kernel:
+        // if mouse event at T1 arrives, after select at T2,
+        // maybe there are still keyboard events to COME,
+        // from between  T2 and T1 !!! fixme!
+
+        // push time into all devices
+        // mmc: that's why I need the @now to limit this:
+        // Imagine the last read (b/c of select) is from mouse,
+        // and it deliveres `last_minute' events.
+        // Cannot be applied to other devices!
+        if (still_pushing_time) {
+            if (time_max > event.any.time) {
+                pushed_time = event.any.time;
+                push_time_to_devices(pushed_time);
+            } else {
+                still_pushing_time = FALSE;
+                /* last time: */
+                if (pushed_time < time_max) {
+                    pushed_time = time_max;
+                    push_time_to_devices(pushed_time);
+                }
+            }
+        }
+        // push the event.
+        push_event_to_device(dev, &event, screen);
+
+#ifdef XQUARTZ
+        pthread_mutex_lock(&miEventQueueMutex);
+#endif
     }
 
+#else // USE_SEPARATE_QUEUES
     while (miEventQueue.head != miEventQueue.tail) {
         e = &miEventQueue.events[miEventQueue.head];
 
-        event = *e->events;
+        event = *e->event;
         dev = e->pDev;
         screen = e->pScreen;
 
         miEventQueue.head = (miEventQueue.head + 1) % miEventQueue.nevents;
 
         input_unlock();
-
-        master = (dev) ? GetMaster(dev, MASTER_ATTACHED) : NULL;
-
-        if (screenIsSaved == SCREEN_SAVER_ON)
-            dixSaveScreens(serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
-#ifdef DPMSExtension
-        else if (DPMSPowerLevel != DPMSModeOn)
-            SetScreenSaverTimer();
-
-        if (DPMSPowerLevel != DPMSModeOn)
-            DPMSSet(serverClient, DPMSModeOn);
-#endif
-
-        mieqProcessDeviceEvent(dev, &event, screen);
-
-        /* Update the sprite now. Next event may be from different device. */
-        if (master &&
-            (event.any.type == ET_Motion ||
-             ((event.any.type == ET_TouchBegin ||
-               event.any.type == ET_TouchUpdate) &&
-              event.device_event.flags & TOUCH_POINTER_EMULATED)))
-            miPointerUpdateSprite(dev);
-
+        push_event_to_device(dev, &event, screen);
         input_lock();
     }
 
+#endif // USE_SEPARATE_QUEUES
     inProcessInputEvents = FALSE;
 
     input_unlock();
+
+    /* fixme: is this not necessary for !USE_SEPARATE_QUEUES ? */
+#if USE_SEPARATE_QUEUES
+    if (pushed_time < time_max) {
+        pushed_time = time_max;
+        push_time_to_devices(pushed_time);
+    }
+#endif // USE_SEPARATE_QUEUES
 }
