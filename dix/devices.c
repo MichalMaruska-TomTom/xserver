@@ -434,6 +434,7 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
     /* initialise an idle timer for this device*/
     dev->idle_counter = SyncInitDeviceIdleTime(dev);
 
+    mieq_init_device_queue(dev);
     return TRUE;
 }
 
@@ -527,6 +528,8 @@ DisableDevice(DeviceIntPtr dev, BOOL sendevent)
 
     RecalculateMasterButtons(dev);
 
+    /* disable the mieq queue. */
+    mieq_close_device_queue(dev);
     return TRUE;
 }
 
@@ -1070,6 +1073,7 @@ CloseDownDevices(void)
             dev->master = NULL;
     }
 
+    /* note: they are already disabled. */
     CloseDeviceList(&inputInfo.devices);
     CloseDeviceList(&inputInfo.off_devices);
 
