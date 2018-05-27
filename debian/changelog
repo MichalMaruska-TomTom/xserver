@@ -1,3 +1,93 @@
+xorg-server (2:1.20.0-2-maruska) unstable; urgency=medium
+
+  * Extend the DIX api, to accept keyboard events with timestamp.
+  * Extend the Xfree86 DDX api for drivers, to pass the timestamp of keyboard events. new ABI version.
+  * Extend dix api to register Block- and Wake-handlers which use the "current" time.
+  * Extend MI api, so that DDX event processing can flush the minimum "current time".
+  * XFree86 DDX: register the extended (Time pushing) Wakeup handler + offer new api ProcessInputEventsPush which requires mieqProcessInputEventsTime
+  * dix: new callback to ddx ProcessInputEventsPush
+  * Dix: new methods of the Device: thawProc and pushTimeProc.
+  * use the thawProc, but also syncEvents queue.
+  * comments
+  * verbosity
+  * Configure: Enable use the pipeline optionally.
+  * Define the C structs to have a pipeline of plugins, for input devices. CONDITIONALLY
+  * The pipeline infrastructure --- connection, registration of plugins.
+  * Fix set_timeout:
+  * Attach the pipeline to the xkb code: Init & various protocol requests to configure the plugins.
+  * Expose ADD_PLUGIN call into (server) header file.
+  * C++ friendliness: so that the plugin can be copiled as C++ code.
+  * eventstr.h part of the SDK: for the plugin code. -- InternalEvent
+  * transpose 2 ..
+  * overwrite also 0 & -1 timeout.
+  * hm -1
+  * waitfor: once per cycle.
+  * header?
+  * obsolete strange comments
+  * constructor
+  * spaces
+  * Auto-repeat introduction: fix AR -- use the non-raw event type! Use init_raw instead of init_event, for now, to synthesize a new event.
+  * remove XKB autorepeat when pipeline used
+  * disable hardware autorepeat
+  * Use/allocate the correct type of event (union).
+  * AR: verbosity in AR
+  * reduce/stop tracing in AR.
+  * Verbosity in XI: disabled now.
+  * ProcessOtherEvent  disabled
+  * HACK: disable overwriting keymap on Device change
+  * fixes in xkb.c: bug with requests to update with different types
+  * Fixes of off-by-one mistakes
+  * Shrink XKB tables when too much grown
+  * fix: per key repeat
+  * my comments
+  * my comments on xkb.c
+  * info on possible bug with key repeat --- no fix
+  * verbosity in xkb.c: autorepeat
+  * logging macros in dix/events
+  * colorful tracing/debugging
+  * introduce Loader class, ABI version for pipeline plugins
+  * turn off tracing grab/allow.
+  * extend loader to check ABI of input modules
+  * Avoid correcting event timestamps in MI, Pipeline needs precision.
+  * use pushTimeProc after processing events (in MI) -- depends on MMC_PIPELINE?
+  * Change the slot name to single event, not plural events.
+  * Manage the device-specific queues.
+  * Lock when adding & removing the queues!
+  * Enqueue events into device-specific queue.  Use find_queue()
+  * mi: For MMC_PIPELINE don't force increasing event time.
+  * [half conditional] When processing mi events, do push_time_to_devices() to related _master_ device.
+  * split push_event_to_device() out of mieqProcessInputEvents()
+  * comment
+  * Process the events in correct order: find_first_non_empty().
+  * Split the initial part of mieqProcessInputEvents() into miManageQueue().
+  * [bad half!] mieqProcessInputEventsTime: push only up to the max time.
+  * enable USE_SEPARATE_QUEUES
+  * ignore debian product files
+  * (almost)0disable quilt series
+  * enable pipeline!
+  * also for udeb build!
+  * Verbosity on Grabs and AllowSome. Time printing for ProcGrabPointer is broken.
+  * comments & unused code
+  * verbosity on deactivating grab (allow-event replay is culprit)
+  * verbosity on why ungrab fails
+  * trace conditionally ungrab & allowSome
+  * Restore Special actions to keys (SWITCH-vt action)
+  * Aware of off_devices when walking all devices....
+  * comments on sync replaying
+  * tracing in ComputeFreezes.
+  * trailing
+  * flipper comments
+  * selection.h needed in dix/windows.c ... suggestion from Debian patch (why not applied)??
+  * trace ComputeFreezes conditionally.
+  * During ungrab/allow and re-grabbing, use the Event time faithfully.
+  * MonthChangedOrBadTime ... verbose & disabled
+  * Slave (hw) key events should not touch the GLOBAL TIME
+  * Don't update the time just b/c it's noticed!
+  * Don't push event time ahead. Yet, push currentTime even in Sync play.
+  * Do update the non-event current time.
+
+ -- Michal Maruska <mmaruska@gmail.com>  Sun, 27 May 2018 18:06:47 +0200
+
 xorg-server (2:1.20.0-2) unstable; urgency=medium
 
   * Bump some minimum (build) dependencies.
