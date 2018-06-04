@@ -1,3 +1,9 @@
+xorg-server (2:1.20.0-2-maruska2) unstable; urgency=medium
+
+  * try to fix the crash
+
+ -- Michal Maruska <mmaruska@gmail.com>  Mon, 04 Jun 2018 22:38:38 +0200
+
 xorg-server (2:1.20.0-2-maruska) unstable; urgency=medium
 
   * Extend the DIX api, to accept keyboard events with timestamp.
