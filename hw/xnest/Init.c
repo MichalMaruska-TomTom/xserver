@@ -169,3 +169,8 @@ ddxBeforeReset(void)
     return;
 }
 #endif
+
+void
+UnloadModule(void *_mod)
+{
+}
