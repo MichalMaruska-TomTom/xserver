@@ -1057,3 +1057,8 @@ ddxUseMsg(void)
     ErrorF("        Ctrl-Alt-q    Quit (core devices only)\n");
     ErrorF("        Ctrl-Alt-F*   Switch to VC (local only)\n");
 }
+
+void
+UnloadModule(void *_mod)
+{
+}
