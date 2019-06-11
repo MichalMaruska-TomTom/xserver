@@ -1354,3 +1354,8 @@ InitOutput(ScreenInfo * screen_info, int argc, char **argv)
 
     LocalAccessScopeUser();
 }
+
+void
+UnloadModule(void *_mod)
+{
+}
