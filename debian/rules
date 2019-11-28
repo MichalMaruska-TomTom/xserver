@@ -137,5 +137,5 @@ endif
 
 override_dh_clean:
 	dh_clean
-	rm -rf debian/build
-	rm -rf build-source
+#	rm -rf debian/build
+#	rm -rf build-source
