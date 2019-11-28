@@ -152,7 +152,7 @@ extern _X_EXPORT void xf86PostKeyEvent(DeviceIntPtr device,
 extern _X_EXPORT void xf86PostKeyEventM(DeviceIntPtr device,
                                         unsigned int key_code, int is_down);
 extern _X_EXPORT void xf86PostKeyEventMTime(DeviceIntPtr device,
-                                             unsigned int key_code, int is_down,
+                                            unsigned int key_code, int is_down,
                                             Time time);
 extern _X_EXPORT void xf86PostKeyEventP(DeviceIntPtr device,
                                         unsigned int key_code, int is_down);
