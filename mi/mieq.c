@@ -269,8 +269,9 @@ find_queue(DeviceIntPtr pDev)
 
 void mieq_close_device_queue(DeviceIntPtr dev)
 {
+    int i;
     input_lock();
-    int i= find_queue(dev);
+    i = find_queue(dev);
     if (i== -1) {
         ErrorF("%s: the being-closed device was not registered\n", __func__);
         return;
