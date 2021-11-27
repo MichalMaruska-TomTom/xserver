@@ -150,3 +150,12 @@ CloseInput(void)
 {
     mieqFini();
 }
+
+
+void
+UnloadModule(void *_mod)
+{
+}
+
+void* LoadModule(const char *a, void *b, const void *c, int *d)
+{return NULL;}
