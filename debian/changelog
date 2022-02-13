@@ -1,3 +1,108 @@
+xorg-server (2:21.1.3-2-maruska) unstable; urgency=medium
+
+  * Extend the DIX api, to accept keyboard events with timestamp.
+  * Extend the Xfree86 DDX api for drivers, to pass the timestamp of keyboard events. new ABI version.
+  * Extend dix api to register Block- and Wake-handlers which use the "current" time.
+  * hm -1
+  * waitfor: once per cycle.
+  * Extend MI api, so that DDX event processing can flush the minimum "current time".
+  * XFree86 DDX: register the extended (Time pushing) Wakeup handler + offer new api ProcessInputEventsPush which requires mieqProcessInputEventsTime
+  * dix: new callback to ddx ProcessInputEventsPush
+  * Dix: new methods of the Device: thawProc and pushTimeProc.
+  * use the thawProc, but also syncEvents queue.
+  * comments
+  * verbosity
+  * BlockHandler no more pReadMask ???
+  * Configure: Enable use the pipeline optionally.
+  * Define the C structs to have a pipeline of plugins, for input devices. CONDITIONALLY
+  * The pipeline infrastructure --- connection, registration of plugins.
+  * activate the fork plugin, if the module was loaded (due to xorg.conf)
+  * header?
+  * Fix set_timeout:
+  * Attach the pipeline to the xkb code: Init & various protocol requests to configure the plugins.
+  * Expose ADD_PLUGIN call into (server) header file.
+  * C++ friendliness: so that the plugin can be copiled as C++ code.
+  * eventstr.h part of the SDK: for the plugin code. -- InternalEvent
+  * transpose 2 ..
+  * overwrite also 0 & -1 timeout.
+  * obsolete strange comments
+  * try to fix the crash
+  * re-enable UnloadModule where it can be done!
+  * Use the LoadModule()
+  * invert declaration & code
+  * zero the plugin after unload
+  * require version 1
+  * Auto-repeat plugin
+  * remove XKB autorepeat when pipeline used
+  * disable hardware autorepeat
+  * fix
+  * verbosity in XI: ProcessOtherEvent
+  * HACK: disable overwriting keymap on Device change
+  * silence XI
+  * fixes in xkb.c: bug with requests to update with different types
+  * Fixes of off-by-one mistakes
+  * Shrink XKB tables when too much grown
+  * fix: per key repeat
+  * my comments
+  * my comments on xkb.c
+  * info on possible bug with key repeat --- no fix
+  * verbosity in xkb.c: autorepeat
+  * introduce Loader class, ABI version for pipeline plugins
+  * extend loader to check ABI of input modules
+  * Add UnloadModule(void *_mod) to non-xfree86 servers.
+  * And loadmodule
+  * Avoid correcting event timestamps in MI, Pipeline needs precision.
+  * logging macros in dix/events
+  * use pushTimeProc after processing events (in MI) -- depends on MMC_PIPELINE?
+  * colorful tracing/debugging
+  * Change the slot name to single event, not plural events.
+  * turn off tracing grab/allow.
+  * Manage the device-specific queues.
+  * Lock when adding & removing the queues!
+  * Enqueue events into device-specific queue.  Use find_queue()
+  * mi: For MMC_PIPELINE don't force increasing event time.
+  * [half conditional] When processing mi events, do push_time_to_devices() to related _master_ device.
+  * split push_event_to_device() out of mieqProcessInputEvents()
+  * comment
+  * Process the events in correct order: find_first_non_empty().
+  * Split the initial part of mieqProcessInputEvents() into miManageQueue().
+  * ignore debian product files
+  * (almost) disable quilt series (not full now?)
+  * enable pipeline!
+  * also for udeb build!
+  * debian: don't remove as part of clean ....
+  * drop the source-install
+  * debian: add more .gitignore
+  * debian: add build dependency on libx11-xcb-dev
+  * Restore Special actions to keys (SWITCH-vt action)
+  * defines PLUGIN_(NON_)FROZEN & change the plugin api!
+  * AR: return the info
+  * ar_thaw: do not ar_push_events if next is frozen!
+  * core-plugin ... time is pushed only to unfrozen!
+  * Verbosity on Grabs and AllowSome. Time printing for ProcGrabPointer is broken.
+  * comments & unused code
+  * verbosity on deactivating grab (allow-event replay is culprit)
+  * verbosity on why ungrab fails
+  * trace conditionally ungrab & allowSome
+  * tabs
+  * Use off_devices list when devices is NULL.
+  * selection.h needed in dix/windows.c ... suggestion from Debian patch (why not applied)??
+  * struct _XF86OptionRec not used!
+  * During ungrab/allow and re-grabbing, use the Event time faithfully.
+  * MonthChangedOrBadTime ... verbose & disabled
+  * comments on sync replaying
+  * Slave (hw) key events should not touch the GLOBAL TIME
+  * trace ComputeFreezes conditionally.
+  * Don't update the time just b/c it's noticed!
+  * trailing
+  * Don't push event time ahead. Yet, push currentTime even in Sync play.
+  * Comments on the flip-switch to avoid recursion in replaying frozen events.
+  * Do update the non-event current time.
+  * [bad half!] mieqProcessInputEventsTime: push only up to the max time.
+  * enable USE_SEPARATE_QUEUES
+
+ -- Michal Maruska <mmaruska@gmail.com>  Sun, 13 Feb 2022 22:25:33 +0100
+
 xorg-server (2:21.1.3-2) unstable; urgency=medium
 
   * present-Check-for-NULL-to-prevent-crash.patch: Fix a crash with
