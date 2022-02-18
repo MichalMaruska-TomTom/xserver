@@ -9,7 +9,7 @@ extern int ProcXkbLatchLockState(ClientPtr client);
 extern int ProcXkbGetControls(ClientPtr client);
 extern int ProcXkbSetControls(ClientPtr client);
 extern int ProcXkbGetMap(ClientPtr client);
-extern int ProcXkbSetMap(ClientPtr client);
+extern _X_EXPORT int ProcXkbSetMap(ClientPtr client);
 extern int ProcXkbGetCompatMap(ClientPtr client);
 extern int ProcXkbSetCompatMap(ClientPtr client);
 extern int ProcXkbGetIndicatorState(ClientPtr client);
