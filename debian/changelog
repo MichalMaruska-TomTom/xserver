@@ -1,3 +1,9 @@
+xorg-server (2:21.1.7-4) UNRELEASED; urgency=medium
+
+  * patches: Drop an obsolete patch. (Closes: #1034413)
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Fri, 14 Apr 2023 20:53:09 +0300
+
 xorg-server (2:21.1.7-3) unstable; urgency=medium
 
   * Enable DRI2 for the udeb build, needed in addition to DRM support
