@@ -1,67 +1,15 @@
-segment mmc-extend-apis           heads/debian-unstable
-segment mmc-pipeline              heads/mmc-extend-apis
-segment ubuntu-mmc-extend-apis    tags/ubuntu/base
-segment mmc-autorepeat            heads/mmc-pipeline
-segment ubuntu-mmc-pipeline       heads/ubuntu-mmc-extend-apis
-segment mmc-xi-adaptation         heads/debian-unstable
-segment mmc-xkb                   heads/debian-unstable
-segment mmc-plugin-loader         heads/mmc-pipeline
-segment mmc-debug                 heads/debian-unstable
-segment multi-mieq                heads/mmc-extend-apis
-segment mmc-debian                heads/debian-unstable
-segment mmc-handy                 heads/mmc-extend-apis
-segment return-frozen             heads/mmc-autorepeat
-segment mmc-debug-grabs           heads/mmc-extend-apis
-segment mmc-fixes                 heads/mmc-extend-apis
-segment mmc-keep-time             heads/mmc-extend-apis
-segment ubuntu-mmc-autorepeat     heads/ubuntu-mmc-pipeline
-sum mmc-all                       
-                                  mmc-autorepeat
-                                  mmc-xi-adaptation
-                                  mmc-xkb
-                                  mmc-plugin-loader
-                                  mmc-debug
-                                  multi-mieq
-                                  mmc-debian
-                                  mmc-handy
-                                  return-frozen
-                                  mmc-debug-grabs
-                                  mmc-fixes
-                                  mmc-keep-time
-segment ubuntu-mmc-xi-adaptation  tags/ubuntu/base
-segment ubuntu-mmc-fixes          heads/ubuntu-mmc-extend-apis
-segment ubuntu-mmc-keep-time      heads/ubuntu-mmc-extend-apis
-segment ubuntu-patches            tags/ubuntu/base
-segment ubuntu-mmc-xkb            tags/ubuntu/base
-segment ubuntu-mmc-plugin-loader  heads/ubuntu-mmc-pipeline
-segment ubuntu-mmc-debug          tags/ubuntu/base
-segment ubuntu-multi-mieq         heads/ubuntu-mmc-extend-apis
-segment ubuntu-mmc-debian         tags/ubuntu/base
-segment ubuntu-mmc-handy          heads/ubuntu-mmc-extend-apis
-segment ubuntu-return-frozen      heads/ubuntu-mmc-autorepeat
-segment ubuntu-mmc-debug-grabs    heads/ubuntu-mmc-extend-apis
-segment mmc-timestamped-events    heads/debian-unstable
-sum mmc-dbg+pipe                  
-                                  mmc-debug
-                                  mmc-pipeline
-segment unload                    heads/mmc-all
-sum ubuntu-mmc-all                
-                                  ubuntu-mmc-xi-adaptation
-                                  ubuntu-mmc-fixes
-                                  ubuntu-mmc-keep-time
-                                  ubuntu-patches
-                                  ubuntu-mmc-xkb
-                                  ubuntu-mmc-plugin-loader
-                                  ubuntu-mmc-debug
-                                  ubuntu-multi-mieq
-                                  ubuntu-mmc-debian
-                                  ubuntu-mmc-handy
-                                  ubuntu-return-frozen
-                                  ubuntu-mmc-debug-grabs
-segment new                       heads/mmc-all
-segment mod-on-boot               heads/mmc-all
-segment mmc-push-time             heads/mmc-timestamped-events
-segment mmc-debug-pipeline        heads/mmc-dbg+pipe
-segment mmc-compile               heads/mmc-all
-segment mieq-useless              heads/multi-mieq
-segment comments                  heads/mmc-all
+sum	mmc-all	036c9923cb231fe5383da1ac22eecf95facf2e48	 refs/heads/mmc-autorepeat	 refs/heads/mmc-xi-adaptation	 refs/heads/mmc-xkb	 refs/heads/mmc-plugin-loader	 refs/heads/mmc-debug	 refs/heads/multi-mieq	 refs/heads/mmc-debian	 refs/heads/mmc-handy	 refs/heads/return-frozen	 refs/heads/mmc-debug-grabs	 refs/heads/mmc-fixes	 refs/heads/mmc-keep-time
+segment mmc-autorepeat 	 640e978289c89e5494132199a2d7144907a0047e 	 refs/heads/mmc-pipeline 	 9c8c16437641d3afef5a30c746bf390463854af0
+segment mmc-xi-adaptation 	 576ee1e5d46a88d2634e5f9863f95f95ce1f7943 	 refs/heads/debian-unstable 	 d376ac365f3bf9f31068f7a177744f87e84d44ad
+segment mmc-xkb 	 2b84d75782a4c119cbecdc9e605400ce8875e051 	 refs/heads/debian-unstable 	 d376ac365f3bf9f31068f7a177744f87e84d44ad
+segment mmc-plugin-loader 	 276b3b90e339230a3db6696ebd4ba37be45fc53b 	 refs/heads/mmc-pipeline 	 9c8c16437641d3afef5a30c746bf390463854af0
+segment mmc-debug 	 eea53b9b9a163863e3a519605838476ffe04bc08 	 refs/heads/debian-unstable 	 d376ac365f3bf9f31068f7a177744f87e84d44ad
+segment multi-mieq 	 5d7511fb6bc69fe1297b7ab51339d1b67cfcf687 	 refs/heads/mmc-extend-apis 	 609c7851f367b61c57fd870716295e874caef794
+segment mmc-debian 	 6001fa9cdfb7084e7f7e8d75dbb70f66a05e803f 	 refs/heads/debian-unstable 	 d376ac365f3bf9f31068f7a177744f87e84d44ad
+segment mmc-handy 	 2ac7fa5f93802aa918dd1bd52d5147cf418a4c66 	 refs/heads/mmc-extend-apis 	 609c7851f367b61c57fd870716295e874caef794
+segment return-frozen 	 cdee357dfe522d1f362d62b1f4c31639a9da9d61 	 refs/heads/mmc-autorepeat 	 640e978289c89e5494132199a2d7144907a0047e
+segment mmc-debug-grabs 	 cbcbe8a3c3ae81e3d1c5142a5e4909c201a708c0 	 refs/heads/mmc-extend-apis 	 609c7851f367b61c57fd870716295e874caef794
+segment mmc-fixes 	 29671926eefbb9c5253165721682057b7822da8c 	 refs/heads/mmc-extend-apis 	 609c7851f367b61c57fd870716295e874caef794
+segment mmc-keep-time 	 d3825e6f94670d786c33f2d2b15827bdc08993ac 	 refs/heads/mmc-extend-apis 	 609c7851f367b61c57fd870716295e874caef794
+segment mmc-pipeline 	 9c8c16437641d3afef5a30c746bf390463854af0 	 refs/heads/mmc-extend-apis 	 609c7851f367b61c57fd870716295e874caef794
+segment mmc-extend-apis 	 609c7851f367b61c57fd870716295e874caef794 	 refs/heads/debian-unstable 	 d376ac365f3bf9f31068f7a177744f87e84d44ad
