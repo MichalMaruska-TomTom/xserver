@@ -1,33 +1,67 @@
-segment mieq-useless	 heads/multi-mieq
-segment mmc-autorepeat	 heads/mmc-pipeline
-segment mmc-debian	 heads/debian-unstable
-segment mmc-debug	 heads/debian-unstable
-segment mmc-debug-grabs	 heads/mmc-extend-apis
-segment mmc-debug-pipeline	 heads/mmc-dbg+pipe
-segment mmc-extend-apis	 heads/debian-unstable
-segment mmc-fixes	 heads/mmc-extend-apis
-segment mmc-handy	 heads/mmc-extend-apis
-segment mmc-keep-time	 heads/mmc-extend-apis
-segment mmc-pipeline	 heads/mmc-extend-apis
-segment mmc-plugin-loader	 heads/mmc-pipeline
-segment mmc-xi-adaptation	 heads/debian-unstable
-segment mmc-xkb	 heads/debian-unstable
-segment multi-mieq	 heads/mmc-extend-apis
-segment new	 heads/mmc-all
-sum	mmc-all
-	mmc_autorepeat
-	mmc_xi_adaptation
-	mmc_xkb
-	mmc_plugin_loader
-	mmc_debug
-	multi_mieq
-	mmc_debian
-	mmc_handy
-	mmc_debug_grabs
-	mmc_fixes
-	mmc_keep_time
-
-sum	mmc-dbg+pipe
-	mmc_debug
-	mmc_pipeline
-
+segment mmc-extend-apis           heads/debian-unstable
+segment mmc-pipeline              heads/mmc-extend-apis
+segment ubuntu-mmc-extend-apis    tags/ubuntu/base
+segment mmc-autorepeat            heads/mmc-pipeline
+segment ubuntu-mmc-pipeline       heads/ubuntu-mmc-extend-apis
+segment mmc-xi-adaptation         heads/debian-unstable
+segment mmc-xkb                   heads/debian-unstable
+segment mmc-plugin-loader         heads/mmc-pipeline
+segment mmc-debug                 heads/debian-unstable
+segment multi-mieq                heads/mmc-extend-apis
+segment mmc-debian                heads/debian-unstable
+segment mmc-handy                 heads/mmc-extend-apis
+segment return-frozen             heads/mmc-autorepeat
+segment mmc-debug-grabs           heads/mmc-extend-apis
+segment mmc-fixes                 heads/mmc-extend-apis
+segment mmc-keep-time             heads/mmc-extend-apis
+segment ubuntu-mmc-autorepeat     heads/ubuntu-mmc-pipeline
+sum mmc-all                       
+                                  mmc-autorepeat
+                                  mmc-xi-adaptation
+                                  mmc-xkb
+                                  mmc-plugin-loader
+                                  mmc-debug
+                                  multi-mieq
+                                  mmc-debian
+                                  mmc-handy
+                                  return-frozen
+                                  mmc-debug-grabs
+                                  mmc-fixes
+                                  mmc-keep-time
+segment ubuntu-mmc-xi-adaptation  tags/ubuntu/base
+segment ubuntu-mmc-fixes          heads/ubuntu-mmc-extend-apis
+segment ubuntu-mmc-keep-time      heads/ubuntu-mmc-extend-apis
+segment ubuntu-patches            tags/ubuntu/base
+segment ubuntu-mmc-xkb            tags/ubuntu/base
+segment ubuntu-mmc-plugin-loader  heads/ubuntu-mmc-pipeline
+segment ubuntu-mmc-debug          tags/ubuntu/base
+segment ubuntu-multi-mieq         heads/ubuntu-mmc-extend-apis
+segment ubuntu-mmc-debian         tags/ubuntu/base
+segment ubuntu-mmc-handy          heads/ubuntu-mmc-extend-apis
+segment ubuntu-return-frozen      heads/ubuntu-mmc-autorepeat
+segment ubuntu-mmc-debug-grabs    heads/ubuntu-mmc-extend-apis
+segment mmc-timestamped-events    heads/debian-unstable
+sum mmc-dbg+pipe                  
+                                  mmc-debug
+                                  mmc-pipeline
+segment unload                    heads/mmc-all
+sum ubuntu-mmc-all                
+                                  ubuntu-mmc-xi-adaptation
+                                  ubuntu-mmc-fixes
+                                  ubuntu-mmc-keep-time
+                                  ubuntu-patches
+                                  ubuntu-mmc-xkb
+                                  ubuntu-mmc-plugin-loader
+                                  ubuntu-mmc-debug
+                                  ubuntu-multi-mieq
+                                  ubuntu-mmc-debian
+                                  ubuntu-mmc-handy
+                                  ubuntu-return-frozen
+                                  ubuntu-mmc-debug-grabs
+segment new                       heads/mmc-all
+segment mod-on-boot               heads/mmc-all
+segment mmc-push-time             heads/mmc-timestamped-events
+segment mmc-debug-pipeline        heads/mmc-dbg+pipe
+segment mmc-compile               heads/mmc-all
+segment mieq-useless              heads/multi-mieq
+segment comments                  heads/mmc-all
