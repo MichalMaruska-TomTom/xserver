@@ -1,6 +1,7 @@
-xorg-server (2:21.1.7-4) UNRELEASED; urgency=medium
+xorg-server (2:21.1.8-1) UNRELEASED; urgency=medium
 
   * patches: Drop an obsolete patch. (Closes: #1034413)
+  * New upstream release.
 
  -- Timo Aaltonen <tjaalton@debian.org>  Fri, 14 Apr 2023 20:53:09 +0300
 
