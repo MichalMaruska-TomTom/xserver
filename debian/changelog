@@ -1,3 +1,12 @@
+xorg-server (2:21.1.9-1) UNRELEASED; urgency=medium
+
+  * New upstream release.
+    - CVE-2023-5367
+    - CVE-2023-5380
+    - CVE-2023-5574
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Wed, 25 Oct 2023 10:38:28 +0300
+
 xorg-server (2:21.1.8-1) unstable; urgency=medium
 
   * patches: Drop an obsolete patch. (Closes: #1034413)
