@@ -1,4 +1,4 @@
-xorg-server (2:21.1.10-1) UNRELEASED; urgency=medium
+xorg-server (2:21.1.10-1) unstable; urgency=medium
 
   [ Emilio Pozuelo Monfort ]
   * Fix build on hurd-amd64. Thanks Samuel Thibault. (Closes: #1055412)
@@ -8,7 +8,7 @@ xorg-server (2:21.1.10-1) UNRELEASED; urgency=medium
     - CVE-2023-6377
     - CVE-2023-6478
 
- -- Emilio Pozuelo Monfort <pochu@debian.org>  Mon, 13 Nov 2023 11:06:22 +0100
+ -- Timo Aaltonen <tjaalton@debian.org>  Wed, 13 Dec 2023 09:51:20 +0200
 
 xorg-server (2:21.1.9-1) unstable; urgency=medium
 
