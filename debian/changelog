@@ -1,6 +1,7 @@
 xorg-server (2:21.1.13-1) UNRELEASED; urgency=medium
 
   * New upstream release.
+  * Update signing-key.asc.
 
  -- Timo Aaltonen <tjaalton@debian.org>  Mon, 26 Aug 2024 19:05:35 +0300
 
