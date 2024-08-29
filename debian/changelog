@@ -4,6 +4,7 @@ xorg-server (2:21.1.13-1) UNRELEASED; urgency=medium
   * Update signing-key.asc.
   * Add upstream metadata, drop old git url from d/watch.
   * control: Migrate to pkgconf.
+  * control: Substitute libgl1-mesa-dev build-dep to libglvnd-dev.
 
  -- Timo Aaltonen <tjaalton@debian.org>  Mon, 26 Aug 2024 19:05:35 +0300
 
