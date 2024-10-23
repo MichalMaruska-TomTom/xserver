@@ -3,6 +3,9 @@ xorg-server (2:21.1.13-3) UNRELEASED; urgency=medium
   [ Tobias Heider ]
   * Backport config quirk for apple silicon (closes: #1080099)
 
+  [ Emilio Pozuelo Monfort ]
+  * Build-dep on libxcb-util-dev instead of libxcb-util0-dev.
+
  -- Emilio Pozuelo Monfort <pochu@debian.org>  Wed, 23 Oct 2024 12:34:06 +0200
 
 xorg-server (2:21.1.13-2) unstable; urgency=medium
