@@ -1,3 +1,11 @@
+xorg-server (2:21.1.14-1) unstable; urgency=high
+
+  * New upstream release
+    + CVE-2024-9632: Heap-based buffer overflow privilege escalation in
+      _XkbSetCompatMap (closes: #1086244)
+
+ -- Julien Cristau <jcristau@debian.org>  Tue, 29 Oct 2024 17:25:14 +0100
+
 xorg-server (2:21.1.13-3) unstable; urgency=medium
 
   [ Tobias Heider ]
