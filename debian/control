@@ -65,7 +65,9 @@ Build-Depends:
  libxcb-glx0-dev,
  libxcb-xf86dri0-dev (>= 1.6),
 # unit tests
+ xauth <!nocheck>,
  xkb-data,
+ x11-utils <!nocheck>,
  x11-xkb-utils,
 # arc4random_buf(), getpeereid()
  libbsd-dev,
